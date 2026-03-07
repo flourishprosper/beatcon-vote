@@ -12,6 +12,18 @@ export default function HomePage() {
         >
           Admin dashboard
         </Link>
+        <Link
+          href="/register"
+          className="rounded-lg border-2 border-zinc-800 px-6 py-3 text-lg font-bold text-zinc-900 hover:bg-zinc-100"
+        >
+          Producer registration
+        </Link>
+        <Link
+          href="/producer/login"
+          className="text-base font-medium text-zinc-600 hover:text-zinc-900"
+        >
+          Producer sign in
+        </Link>
         <p className="text-base font-medium text-zinc-500">
           Voters scan the QR code shown on the display, or use the link from the host.
         </p>

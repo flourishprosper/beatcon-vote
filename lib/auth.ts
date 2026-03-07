@@ -16,14 +16,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
+        const email = String(credentials.email);
+        const password = String(credentials.password);
         const { prisma } = await import("./db");
         const admin = await prisma.admin.findUnique({
-          where: { email: String(credentials.email) },
+          where: { email },
         });
-        if (!admin) return null;
-        const ok = await compare(String(credentials.password), admin.password);
-        if (!ok) return null;
-        return { id: admin.id, email: admin.email };
+        if (admin) {
+          const ok = await compare(password, admin.password);
+          if (!ok) return null;
+          return { id: admin.id, email: admin.email, role: "admin" as const };
+        }
+        const producer = await prisma.producer.findUnique({
+          where: { email },
+        });
+        if (producer) {
+          const ok = await compare(password, producer.passwordHash);
+          if (!ok) return null;
+          return {
+            id: producer.id,
+            email: producer.email,
+            role: "producer" as const,
+            producerId: producer.id,
+          };
+        }
+        return null;
       },
     }),
   ],

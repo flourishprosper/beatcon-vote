@@ -9,6 +9,7 @@ const updateSchema = z.object({
   maxVotesPerUser: z.number().int().min(1).optional(),
   participantsPerMatchup: z.number().int().min(2).optional(),
   advancesPerMatchup: z.number().int().min(1).optional(),
+  acceptsProducerRegistration: z.boolean().optional(),
 });
 
 export async function GET(

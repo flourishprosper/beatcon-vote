@@ -19,6 +19,12 @@ type Round = {
   resultsVisible: boolean;
   matchups: Matchup[];
 };
+type ProducerSignupRow = {
+  id: string;
+  participantId: string | null;
+  createdAt: string;
+  producer: { id: string; stageName: string; slug: string; email: string };
+};
 type EventDetail = {
   id: string;
   name: string;
@@ -26,6 +32,7 @@ type EventDetail = {
   maxVotesPerUser: number;
   participantsPerMatchup: number;
   advancesPerMatchup: number;
+  acceptsProducerRegistration?: boolean;
   participants: Participant[];
   rounds: Round[];
   showState: { currentMatchupId: string | null } | null;
@@ -57,6 +64,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const [participantName, setParticipantName] = useState("");
   const [participantSeed, setParticipantSeed] = useState("");
   const [addingParticipant, setAddingParticipant] = useState(false);
+  const [producerSignups, setProducerSignups] = useState<ProducerSignupRow[]>([]);
+  const [addingSignupId, setAddingSignupId] = useState<string | null>(null);
+  const [acceptsProducerRegistration, setAcceptsProducerRegistration] = useState(false);
+  const [savingAcceptsRegistration, setSavingAcceptsRegistration] = useState(false);
 
   useEffect(() => {
     refetchEvent(id)
@@ -65,9 +76,17 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         setCurrentMatchupId(data.showState?.currentMatchupId ?? null);
         setParticipantsPerMatchup(data.participantsPerMatchup ?? 2);
         setAdvancesPerMatchup(data.advancesPerMatchup ?? 1);
+        setAcceptsProducerRegistration(data.acceptsProducerRegistration ?? false);
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    fetch(`/api/events/${id}/producer-signups`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setProducerSignups);
+  }, [id, event?.participants.length]);
 
   async function setCurrentMatchup(matchupId: string | null) {
     if (!id) return;
@@ -170,6 +189,41 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       setEvent((prev) => (prev ? { ...prev, participants: [...prev.participants, data] } : null));
       setParticipantName("");
       setParticipantSeed("");
+    }
+  }
+
+  async function toggleAcceptsProducerRegistration() {
+    if (!id) return;
+    setSavingAcceptsRegistration(true);
+    const next = !acceptsProducerRegistration;
+    const res = await fetch(`/api/events/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ acceptsProducerRegistration: next }),
+    });
+    const data = await res.json();
+    setSavingAcceptsRegistration(false);
+    if (res.ok) {
+      setAcceptsProducerRegistration(next);
+      setEvent((prev) => (prev ? { ...prev, acceptsProducerRegistration: next } : null));
+    }
+  }
+
+  async function addSignupToEvent(signupId: string) {
+    if (!id) return;
+    setAddingSignupId(signupId);
+    const res = await fetch(`/api/events/${id}/producer-signups`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ signupId }),
+    });
+    const data = await res.json();
+    setAddingSignupId(null);
+    if (res.ok) {
+      setEvent((prev) => (prev ? { ...prev, participants: [...prev.participants, data] } : null));
+      setProducerSignups((prev) =>
+        prev.map((s) => (s.id === signupId ? { ...s, participantId: data.id } : s))
+      );
     }
   }
 
@@ -396,6 +450,61 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               <li key={p.id}>
                 {p.name}
                 {p.seed != null ? ` (seed ${p.seed})` : ""}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Producer signups */}
+      <section>
+        <h2 className="mb-3 text-lg font-medium text-zinc-900">Producer signups</h2>
+        <p className="mb-3 text-sm text-zinc-600">
+          Producers can register for this event when &quot;Accept producer registration&quot; is on. Add them to the bracket below.
+        </p>
+        <label className="mb-4 flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={acceptsProducerRegistration}
+            onChange={toggleAcceptsProducerRegistration}
+            disabled={savingAcceptsRegistration}
+            className="rounded border-zinc-300"
+          />
+          <span className="text-sm font-medium text-zinc-700">Accept producer registration</span>
+        </label>
+        {producerSignups.length === 0 ? (
+          <p className="text-sm text-zinc-500">No producer signups yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {producerSignups.map((s) => (
+              <li
+                key={s.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-white p-3"
+              >
+                <div>
+                  <span className="font-medium text-zinc-900">{s.producer.stageName}</span>
+                  <span className="ml-2 text-sm text-zinc-500">{s.producer.email}</span>
+                  <Link
+                    href={`/producers/${s.producer.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 text-sm text-zinc-600 hover:text-zinc-900"
+                  >
+                    View page
+                  </Link>
+                </div>
+                {s.participantId ? (
+                  <span className="text-sm text-emerald-600">Added to bracket</span>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={!!addingSignupId}
+                    onClick={() => addSignupToEvent(s.id)}
+                    className="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm text-white hover:bg-zinc-700 disabled:opacity-50"
+                  >
+                    {addingSignupId === s.id ? "Adding…" : "Add to event"}
+                  </button>
+                )}
               </li>
             ))}
           </ul>
