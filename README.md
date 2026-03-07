@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BeatCon Vote
 
-## Getting Started
+Live voting app: admin manages events, rounds, and matchups; voters scan a QR code to vote; a bracket/scoreboard display updates in real time.
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Install dependencies: `npm install`
+2. Copy `.env` and set `DATABASE_URL` (default: `file:./prisma/dev.db` for SQLite). Set `NEXTAUTH_SECRET` and `NEXTAUTH_URL` for auth.
+3. Create DB and seed admin: `npm run db:migrate` then `npm run db:seed`
+4. Default admin: `admin@beatcon.local` / `admin123` (override with `ADMIN_EMAIL` and `ADMIN_PASSWORD` when running seed)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Run
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Dev: `npm run dev`
+- Build: `npm run build`
+- Start: `npm start`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Usage
 
-## Learn More
+1. **Admin** – Sign in at `/admin/login`, then:
+   - Create an event (name, slug, max votes per user).
+   - Add participants and rounds/matchups under the event.
+   - Set “Flow of show” current matchup to drive the QR and voter page.
+   - Optionally set vote end time per matchup and export results (CSV) from the event page.
 
-To learn more about Next.js, take a look at the following resources:
+2. **QR display** – Open `/display/qr?eventId=<eventId>` (e.g. on a screen). Shows a QR code that links to the current matchup’s vote page. Updates when the admin changes the current matchup.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. **Vote page** – Voters scan the QR (or open `/vote/current?eventId=<eventId>`). They enter name, email, and phone once, then vote for the current matchup. Real-time updates when the matchup or voting window changes.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. **Bracket display** – Open `/display/bracket?eventId=<eventId>` on a TV/LED. Read-only bracket and live scores; refreshes via SSE and polling.
 
-## Deploy on Vercel
+## Tech
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Next.js 16 (App Router), TypeScript, Tailwind, Prisma (SQLite dev), NextAuth (admin credentials), Server-Sent Events for real-time updates.

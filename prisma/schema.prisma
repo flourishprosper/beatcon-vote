@@ -1,0 +1,115 @@
+// Live voting app - SQLite for dev; switch to postgres for production via DATABASE_URL
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model Event {
+  id                     String    @id @default(cuid())
+  name                   String
+  slug                   String    @unique
+  maxVotesPerUser        Int       @default(1) // per matchup (or per round if we add round-level later)
+  participantsPerMatchup Int       @default(2) // how many per matchup in initial/later rounds
+  advancesPerMatchup     Int       @default(1) // how many winners advance from each matchup
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  participants           Participant[]
+  rounds                 Round[]
+  matchups               Matchup[]
+  showState              ShowState?
+}
+
+model Participant {
+  id                  String              @id @default(cuid())
+  eventId             String
+  event               Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name                String
+  imageUrl            String?
+  seed                Int?                // optional bracket seed
+  createdAt           DateTime            @default(now())
+  matchupParticipants MatchupParticipant[]
+  votes               Vote[]
+}
+
+model Round {
+  id            String    @id @default(cuid())
+  eventId       String
+  event         Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  roundIndex    Int       // 0 = first round, etc.
+  label         String    // e.g. "Quarter-finals"
+  status        String    @default("upcoming") // upcoming | live | completed
+  resultsVisible Boolean  @default(false)
+  createdAt     DateTime  @default(now())
+  matchups      Matchup[]
+}
+
+model Matchup {
+  id           String              @id @default(cuid())
+  eventId      String
+  event        Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  roundId      String
+  round        Round               @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  orderInRound Int                 // order within round for display
+  status       String              @default("pending") // pending | live | completed
+  voteEndsAt   DateTime?           // when voting closes; null = until admin ends
+  createdAt    DateTime            @default(now())
+  participants MatchupParticipant[]
+  votes        Vote[]
+}
+
+model MatchupParticipant {
+  id            String      @id @default(cuid())
+  matchupId     String
+  matchup       Matchup     @relation(fields: [matchupId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  slotIndex     Int         // 0, 1, 2, ... for display order
+  createdAt     DateTime    @default(now())
+
+  @@unique([matchupId, slotIndex])
+  @@index([matchupId])
+  @@index([participantId])
+}
+
+model VoterIdentity {
+  id            String   @id @default(cuid())
+  name          String
+  email         String
+  phone         String
+  contactConsent Boolean @default(false)
+  createdAt     DateTime @default(now())
+  votes         Vote[]
+}
+
+model Vote {
+  id             String        @id @default(cuid())
+  matchupId      String
+  matchup        Matchup       @relation(fields: [matchupId], references: [id], onDelete: Cascade)
+  voterIdentityId String
+  voterIdentity  VoterIdentity @relation(fields: [voterIdentityId], references: [id], onDelete: Cascade)
+  participantId  String
+  participant    Participant   @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+
+  @@unique([matchupId, voterIdentityId])
+  @@index([matchupId])
+  @@index([voterIdentityId])
+}
+
+model ShowState {
+  id               String   @id @default(cuid())
+  eventId          String   @unique
+  event            Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  currentMatchupId String?
+  updatedAt        DateTime @updatedAt
+}
