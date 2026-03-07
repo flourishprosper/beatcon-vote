@@ -1,11 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const TICKET_URL = process.env.NEXT_PUBLIC_TICKET_URL ?? "#";
+const TICKET_URL =
+  process.env.NEXT_PUBLIC_TICKET_URL ?? "https://www.eventim.us/event/BEAT-CON/682819";
 
 const DOWNLOADS = [
-  { label: "Rules & regulations", href: "/rules.pdf", description: "Official battle rules and format" },
-  { label: "Sample pack", href: "/samples.zip", description: "Download stems and reference material" },
+  {
+    label: "Rules & format",
+    href: "https://docs.google.com/document/d/1cZrspsoBMEPwQ8JM7ZQatlTbPKuYTmR2kEppfcJgIHs/edit?usp=sharing",
+    description: "Official battle rules and format",
+  },
+  {
+    label: "Sample pack",
+    href: "https://drive.google.com/drive/folders/1qAxY6-MPPDWB2zOep5MoumAM4xJdL-kV",
+    description: "Download stems and reference material",
+  },
 ] as const;
 
 export default function HomePage() {
@@ -177,7 +186,8 @@ export default function HomePage() {
                 <a
                   key={item.href}
                   href={item.href}
-                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="group flex items-center justify-between rounded-xl border border-[var(--lander-border)] bg-[var(--lander-surface)] p-5 transition-colors hover:border-[var(--lander-muted)] hover:bg-[var(--lander-surface)]/80"
                 >
                   <div>
@@ -188,7 +198,7 @@ export default function HomePage() {
                   </div>
                   <span className="rounded-full bg-[var(--lander-bg)] p-2 text-[var(--lander-accent)] transition-colors group-hover:bg-[var(--lander-accent)] group-hover:text-[var(--lander-on-accent)]">
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                   </span>
                 </a>
