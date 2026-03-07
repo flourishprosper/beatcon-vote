@@ -32,6 +32,24 @@ export default function AdminDashboardPage() {
             Full-screen bracket and live scores for TV/LED.
           </p>
         </Link>
+        <Link
+          href="/admin/users"
+          className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:border-zinc-300 hover:shadow"
+        >
+          <h2 className="font-medium text-zinc-900">Users</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            View voters, producers, and admins.
+          </p>
+        </Link>
+        <Link
+          href="/admin/import/producers"
+          className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:border-zinc-300 hover:shadow"
+        >
+          <h2 className="font-medium text-zinc-900">Import producers</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Create producer accounts from a CSV file.
+          </p>
+        </Link>
       </div>
     </div>
   );

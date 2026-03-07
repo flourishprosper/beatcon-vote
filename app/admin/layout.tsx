@@ -20,6 +20,12 @@ export default async function AdminLayout({
               <Link href="/admin/events" className="text-zinc-600 hover:text-zinc-900">
                 Events
               </Link>
+              <Link href="/admin/users" className="text-zinc-600 hover:text-zinc-900">
+                Users
+              </Link>
+              <Link href="/admin/import/producers" className="text-zinc-600 hover:text-zinc-900">
+                Import producers
+              </Link>
             </nav>
             <div className="flex items-center gap-4">
               <span className="text-sm text-zinc-500">{session.user?.email}</span>
