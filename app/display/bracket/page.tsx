@@ -57,7 +57,7 @@ function BracketContent() {
   if (!eventId) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-900 text-white">
-        <p className="text-2xl">Add ?eventId=... to the URL</p>
+        <p className="text-2xl font-bold">Add ?eventId=... to the URL</p>
       </div>
     );
   }
@@ -65,19 +65,19 @@ function BracketContent() {
   if (loading || !bracket) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-900 text-white">
-        <p className="text-2xl">Loading…</p>
+        <p className="text-3xl font-bold">Loading…</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-zinc-900 p-6 text-white">
-      <h1 className="mb-8 text-center text-3xl font-bold md:text-4xl">{bracket.event.name}</h1>
+      <h1 className="mb-8 text-center text-4xl font-bold md:text-5xl">{bracket.event.name}</h1>
 
       <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-2 lg:grid-cols-3">
         {bracket.rounds.map((round) => (
           <div key={round.id} className="rounded-xl border border-zinc-700 bg-zinc-800/50 p-4">
-            <h2 className="mb-4 text-center text-xl font-semibold text-zinc-200">{round.label}</h2>
+            <h2 className="mb-4 text-center text-2xl font-bold text-zinc-100">{round.label}</h2>
             <div className="space-y-3">
               {round.matchups.map((m) => {
                 const isCurrent = m.id === bracket.currentMatchupId;
@@ -90,17 +90,17 @@ function BracketContent() {
                   >
                     {(m.participantsWithVotes ?? []).map((pv, i) => (
                     <div key={pv.participant?.id ?? i}>
-                      {i > 0 && <div className="my-1 text-center text-zinc-500">vs</div>}
+                      {i > 0 && <div className="my-1 text-center text-lg font-bold text-zinc-500">vs</div>}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate font-medium">
+                        <span className="truncate text-lg font-bold md:text-xl">
                           {pv.participant?.name ?? "TBD"}
                         </span>
-                        <span className="text-lg font-bold text-amber-400">{pv.voteCount}</span>
+                        <span className="text-xl font-bold text-amber-400 md:text-2xl">{pv.voteCount}</span>
                       </div>
                     </div>
                   ))}
                     {isCurrent && (
-                      <p className="mt-2 text-center text-xs font-medium uppercase tracking-wide text-amber-400">
+                      <p className="mt-2 text-center text-sm font-bold uppercase tracking-wide text-amber-400">
                         Voting open
                       </p>
                     )}
@@ -112,7 +112,7 @@ function BracketContent() {
         ))}
       </div>
 
-      <p className="mt-8 text-center text-sm text-zinc-500">
+      <p className="mt-8 text-center text-base font-medium text-zinc-500">
         Updates automatically. For full-screen, use your browser’s fullscreen mode (F11).
       </p>
     </div>
@@ -124,7 +124,7 @@ export default function BracketDisplayPage() {
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-zinc-900 text-white">
-          <p className="text-2xl">Loading…</p>
+          <p className="text-3xl font-bold">Loading…</p>
         </div>
       }
     >

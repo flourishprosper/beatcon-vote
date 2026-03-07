@@ -30,6 +30,15 @@ function VoteCurrentContent() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [signupRequired, setSignupRequired] = useState(false);
   const [signup, setSignup] = useState({ name: "", email: "", phone: "", contactConsent: false });
+  const [identifying, setIdentifying] = useState(false);
+
+  function refetchVoteState() {
+    if (!eventId || !currentMatchupId) return;
+    fetch(`/api/matchups/${currentMatchupId}/vote-state`)
+      .then((r) => r.json())
+      .then(setVoteState)
+      .catch(() => {});
+  }
 
   useEffect(() => {
     if (!eventId) {
@@ -78,6 +87,30 @@ function VoteCurrentContent() {
     return () => es.close();
   }, [eventId]);
 
+  async function identify() {
+    const { name, email, phone, contactConsent } = signup;
+    if (!name.trim() || !email.trim() || !phone.trim()) {
+      setMessage({ type: "error", text: "Please enter your name, email, and phone to vote." });
+      return;
+    }
+    setIdentifying(true);
+    setMessage(null);
+    const res = await fetch("/api/voter/identify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name.trim(), email: email.trim(), phone: phone.trim(), contactConsent }),
+      credentials: "include",
+    });
+    const data = await res.json();
+    setIdentifying(false);
+    if (res.ok) {
+      setSignupRequired(false);
+      refetchVoteState();
+    } else {
+      setMessage({ type: "error", text: data.error ?? "Something went wrong" });
+    }
+  }
+
   async function submitVote(
     participantId: string,
     opts?: { name?: string; email?: string; phone?: string; contactConsent?: boolean }
@@ -94,15 +127,14 @@ function VoteCurrentContent() {
         contactConsent: signup.contactConsent,
         ...opts,
       }),
+      credentials: "include",
     });
     const data = await res.json();
     setVoting(false);
     if (res.ok) {
       setMessage({ type: "success", text: "Vote recorded. Thanks!" });
       setSignupRequired(false);
-      fetch(`/api/matchups/${currentMatchupId}/vote-state`)
-        .then((r) => r.json())
-        .then(setVoteState);
+      refetchVoteState();
     } else {
       if (data.error === "Signup required") {
         setSignupRequired(true);
@@ -130,7 +162,7 @@ function VoteCurrentContent() {
   if (!eventId) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
-        <p className="text-zinc-600">Missing event. Use the QR code from the display.</p>
+        <p className="text-lg font-semibold text-zinc-700">Missing event. Use the QR code from the display.</p>
       </div>
     );
   }
@@ -138,7 +170,7 @@ function VoteCurrentContent() {
   if (loading && !voteState) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
-        <p className="text-zinc-600">Loading…</p>
+        <p className="text-xl font-semibold text-zinc-700">Loading…</p>
       </div>
     );
   }
@@ -146,8 +178,8 @@ function VoteCurrentContent() {
   if (!currentMatchupId || !voteState) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 p-4 text-center">
-        <p className="text-zinc-600">No matchup is open for voting right now.</p>
-        <p className="mt-2 text-sm text-zinc-500">Check back when the host starts the next round.</p>
+        <p className="text-xl font-bold text-zinc-700">No matchup is open for voting right now.</p>
+        <p className="mt-2 text-base font-medium text-zinc-500">Check back when the host starts the next round.</p>
       </div>
     );
   }
@@ -155,18 +187,19 @@ function VoteCurrentContent() {
   const participants = voteState.matchup.participants ?? [];
   const canVote = voteState.votingOpen && !voting;
   const participantsWithVotes = voteState.participantsWithVotes ?? [];
+  const showIdentifyFirst = !voteState.signedIn && !signupRequired;
 
   return (
     <div className="min-h-screen bg-zinc-50 p-4">
       <div className="mx-auto max-w-lg">
-        <h1 className="mb-1 text-xl font-semibold text-zinc-900">{voteState.event.name}</h1>
-        <p className="mb-6 text-zinc-500">
+        <h1 className="mb-1 text-3xl font-bold text-zinc-900">{voteState.event.name}</h1>
+        <p className="mb-6 text-xl font-bold text-zinc-700">
           {participants.map((p) => p?.name ?? "TBD").join(" vs ") || "TBD"}
         </p>
 
         {message && (
           <div
-            className={`mb-4 rounded-lg px-4 py-2 ${
+            className={`mb-4 rounded-lg px-4 py-3 text-base font-medium ${
               message.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
             }`}
           >
@@ -174,32 +207,36 @@ function VoteCurrentContent() {
           </div>
         )}
 
-        {signupRequired && (
-          <div className="mb-6 rounded-xl border border-zinc-200 bg-white p-4">
-            <p className="mb-3 font-medium text-zinc-900">Enter your details to vote</p>
-            <div className="space-y-2">
+        {/* Step 1: Identify first when not signed in */}
+        {showIdentifyFirst && (
+          <div className="mb-6 rounded-xl border-2 border-zinc-200 bg-white p-5">
+            <h2 className="mb-4 text-2xl font-bold text-zinc-900">Step 1: Enter your details to vote</h2>
+            <p className="mb-4 text-base font-medium text-zinc-600">
+              Enter your name, email, and phone so we can record your vote. Then you can tap to vote.
+            </p>
+            <div className="space-y-3">
               <input
                 type="text"
                 placeholder="Name"
                 value={signup.name}
                 onChange={(e) => setSignup((s) => ({ ...s, name: e.target.value }))}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2"
+                className="w-full rounded-lg border-2 border-zinc-300 px-4 py-3 text-base font-medium text-zinc-900"
               />
               <input
                 type="email"
                 placeholder="Email"
                 value={signup.email}
                 onChange={(e) => setSignup((s) => ({ ...s, email: e.target.value }))}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2"
+                className="w-full rounded-lg border-2 border-zinc-300 px-4 py-3 text-base font-medium text-zinc-900"
               />
               <input
                 type="tel"
                 placeholder="Phone"
                 value={signup.phone}
                 onChange={(e) => setSignup((s) => ({ ...s, phone: e.target.value }))}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2"
+                className="w-full rounded-lg border-2 border-zinc-300 px-4 py-3 text-base font-medium text-zinc-900"
               />
-              <label className="flex items-center gap-2 text-sm text-zinc-600">
+              <label className="flex items-center gap-2 text-base font-medium text-zinc-600">
                 <input
                   type="checkbox"
                   checked={signup.contactConsent}
@@ -209,38 +246,99 @@ function VoteCurrentContent() {
                 Contact me about future events
               </label>
             </div>
+            <button
+              type="button"
+              onClick={identify}
+              disabled={identifying}
+              className="mt-4 w-full rounded-xl bg-zinc-900 px-4 py-4 text-xl font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
+            >
+              {identifying ? "Continuing…" : "Continue to vote"}
+            </button>
           </div>
         )}
 
-        {!voteState.votingOpen && (
-          <p className="mb-4 text-amber-700">Voting is closed for this matchup.</p>
+        {/* Fallback: signup required after a failed vote (e.g. cookie expired) */}
+        {signupRequired && !showIdentifyFirst && (
+          <div className="mb-6 rounded-xl border-2 border-zinc-200 bg-white p-5">
+            <h2 className="mb-4 text-2xl font-bold text-zinc-900">Enter your details to vote</h2>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Name"
+                value={signup.name}
+                onChange={(e) => setSignup((s) => ({ ...s, name: e.target.value }))}
+                className="w-full rounded-lg border-2 border-zinc-300 px-4 py-3 text-base font-medium text-zinc-900"
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={signup.email}
+                onChange={(e) => setSignup((s) => ({ ...s, email: e.target.value }))}
+                className="w-full rounded-lg border-2 border-zinc-300 px-4 py-3 text-base font-medium text-zinc-900"
+              />
+              <input
+                type="tel"
+                placeholder="Phone"
+                value={signup.phone}
+                onChange={(e) => setSignup((s) => ({ ...s, phone: e.target.value }))}
+                className="w-full rounded-lg border-2 border-zinc-300 px-4 py-3 text-base font-medium text-zinc-900"
+              />
+              <label className="flex items-center gap-2 text-base font-medium text-zinc-600">
+                <input
+                  type="checkbox"
+                  checked={signup.contactConsent}
+                  onChange={(e) => setSignup((s) => ({ ...s, contactConsent: e.target.checked }))}
+                  className="rounded border-zinc-300"
+                />
+                Contact me about future events
+              </label>
+            </div>
+            <button
+              type="button"
+              onClick={identify}
+              disabled={identifying}
+              className="mt-4 w-full rounded-xl bg-zinc-900 px-4 py-4 text-xl font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
+            >
+              {identifying ? "Continuing…" : "Continue to vote"}
+            </button>
+          </div>
         )}
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {participantsWithVotes.map(({ participant, voteCount }) => (
-            <button
-              key={participant.id}
-              type="button"
-              onClick={() => handleVote(participant.id)}
-              disabled={!canVote}
-              className="flex flex-col items-center justify-center rounded-xl border-2 border-zinc-200 bg-white p-6 shadow-sm transition hover:border-zinc-400 hover:shadow disabled:opacity-50"
-            >
-              <span className="text-lg font-medium text-zinc-900">{participant.name}</span>
-              {voteState.votingOpen && (
-                <span className="mt-1 text-sm text-zinc-500">{voteCount} votes</span>
-              )}
-            </button>
-          ))}
-        </div>
+        {/* Step 2: Tap to vote (only when signed in) */}
+        {voteState.signedIn && (
+          <>
+            {!voteState.votingOpen && (
+              <p className="mb-4 text-lg font-bold text-amber-700">Voting is closed for this matchup.</p>
+            )}
 
-        {voteState.matchup.voteEndsAt && voteState.votingOpen && (
-          <p className="mt-4 text-center text-sm text-zinc-500">
+            <h2 className="mb-4 text-2xl font-bold text-zinc-900">Tap to vote</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {participantsWithVotes.map(({ participant, voteCount }) => (
+                <button
+                  key={participant.id}
+                  type="button"
+                  onClick={() => handleVote(participant.id)}
+                  disabled={!canVote}
+                  className="flex flex-col items-center justify-center rounded-xl border-2 border-zinc-200 bg-white p-6 shadow-sm transition hover:border-zinc-400 hover:shadow disabled:opacity-50"
+                >
+                  <span className="text-2xl font-bold text-zinc-900">{participant.name}</span>
+                  {voteState.votingOpen && (
+                    <span className="mt-1 text-lg font-semibold text-zinc-500">{voteCount} votes</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {voteState.matchup.voteEndsAt && voteState.votingOpen && voteState.signedIn && (
+          <p className="mt-4 text-center text-base font-medium text-zinc-500">
             Voting ends {new Date(voteState.matchup.voteEndsAt).toLocaleString()}
           </p>
         )}
 
-        <p className="mt-8 text-center text-sm text-zinc-500">
-          <Link href="/" className="underline">Back to home</Link>
+        <p className="mt-8 text-center text-base font-medium text-zinc-500">
+          <Link href="/" className="font-bold underline">Back to home</Link>
         </p>
       </div>
     </div>
@@ -251,7 +349,7 @@ export default function VoteCurrentPage() {
   return (
     <Suspense fallback={
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
-        <p className="text-zinc-600">Loading…</p>
+        <p className="text-xl font-semibold text-zinc-700">Loading…</p>
       </div>
     }>
       <VoteCurrentContent />

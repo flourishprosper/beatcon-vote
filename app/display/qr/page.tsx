@@ -61,7 +61,7 @@ function QRContent() {
   if (!eventId) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-900 text-white">
-        <p>Add ?eventId=... to the URL</p>
+        <p className="text-2xl font-bold">Add ?eventId=... to the URL</p>
       </div>
     );
   }
@@ -69,7 +69,7 @@ function QRContent() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-900 text-white">
-        <p>Loading…</p>
+        <p className="text-3xl font-bold">Loading…</p>
       </div>
     );
   }
@@ -79,13 +79,13 @@ function QRContent() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-900 p-8 text-white">
-      <h1 className="mb-2 text-2xl font-bold">{state.event?.name ?? "Vote"}</h1>
+      <h1 className="mb-2 text-center text-4xl font-bold md:text-5xl">{state.event?.name ?? "Vote"}</h1>
       {matchup ? (
-        <p className="mb-6 text-lg text-zinc-300">
+        <p className="mb-6 text-center text-2xl font-bold text-white md:text-3xl">
           {(matchup.participants ?? []).map((mp) => mp.participant?.name ?? "TBD").join(" vs ") || "TBD"}
         </p>
       ) : (
-        <p className="mb-6 text-zinc-400">No current matchup</p>
+        <p className="mb-6 text-xl font-bold text-zinc-400">No current matchup</p>
       )}
       <div className="mb-6 rounded-xl bg-white p-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -97,9 +97,9 @@ function QRContent() {
           className="rounded-lg"
         />
       </div>
-      <p className="text-zinc-400">Scan to vote</p>
+      <p className="text-2xl font-bold text-white">Scan to vote</p>
       {voteUrl && (
-        <p className="mt-2 max-w-md truncate text-center text-sm text-zinc-500">{voteUrl}</p>
+        <p className="mt-2 max-w-md truncate text-center text-base font-medium text-zinc-500">{voteUrl}</p>
       )}
     </div>
   );
@@ -109,7 +109,7 @@ export default function QRDisplayPage() {
   return (
     <Suspense fallback={
       <div className="flex min-h-screen items-center justify-center bg-zinc-900 text-white">
-        <p>Loading…</p>
+        <p className="text-3xl font-bold">Loading…</p>
       </div>
     }>
       <QRContent />
