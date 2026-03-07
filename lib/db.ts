@@ -3,18 +3,19 @@ import { PrismaNeon } from "@prisma/adapter-neon";
 
 const connectionString =
   process.env.DATABASE_URL ?? process.env.NETLIFY_DATABASE_URL;
-const adapter = connectionString
+const neonAdapter = connectionString
   ? new PrismaNeon({ connectionString })
-  : undefined;
+  : null;
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
+const logLevel: ("error" | "warn")[] =
+  process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"];
+
 export const prisma =
   globalForPrisma.prisma ??
-  new PrismaClient(
-    adapter
-      ? { adapter, log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"] }
-      : { log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"] }
-  );
+  (neonAdapter
+    ? new PrismaClient({ adapter: neonAdapter, log: logLevel })
+    : new PrismaClient({ log: logLevel } as any));
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

@@ -3,10 +3,10 @@ import { NextResponse } from "next/server";
 
 const { GET: authGet, POST: authPost } = handlers;
 
-function wrap(
-  handler: (req: Request, context: { params: Promise<{ nextauth: string[] }> }) => Promise<Response>
-) {
-  return async (req: Request, context: { params: Promise<{ nextauth: string[] }> }) => {
+type AuthHandler = (req: Request, context?: { params: Promise<{ nextauth: string[] }> }) => Promise<Response>;
+
+function wrap(handler: AuthHandler): AuthHandler {
+  return async (req, context) => {
     if (!process.env.NEXTAUTH_SECRET && !process.env.AUTH_SECRET) {
       console.error("NEXTAUTH_SECRET (or AUTH_SECRET) is not set. Set it in Netlify environment variables.");
       return NextResponse.json(
@@ -26,5 +26,5 @@ function wrap(
   };
 }
 
-export const GET = wrap(authGet);
-export const POST = wrap(authPost);
+export const GET = wrap(authGet as AuthHandler);
+export const POST = wrap(authPost as AuthHandler);
