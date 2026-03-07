@@ -53,7 +53,7 @@ const BRACKET_PRESETS = [
   { label: "4 contestants, 1 winner", n: 4, advances: 1 },
 ] as const;
 
-const TAB_IDS = ["overview", "participants", "rounds", "live"] as const;
+const TAB_IDS = ["overview", "details", "participants", "rounds", "live"] as const;
 type TabId = (typeof TAB_IDS)[number];
 
 function isValidTab(t: string | null): t is TabId {
@@ -317,6 +317,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
   const tabLabels: Record<TabId, string> = {
     overview: "Overview",
+    details: "Event details",
     participants: "Participants",
     rounds: "Rounds",
     live: "Live show",
@@ -340,8 +341,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       setTimeout(() => document.getElementById("tab-overview")?.focus(), 0);
     } else if (e.key === "End") {
       e.preventDefault();
-      setActiveTab("live");
-      setTimeout(() => document.getElementById("tab-live")?.focus(), 0);
+      const lastTab = TAB_IDS[TAB_IDS.length - 1];
+      setActiveTab(lastTab);
+      setTimeout(() => document.getElementById(`tab-${lastTab}`)?.focus(), 0);
     }
   }
 
@@ -472,9 +474,74 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         </section>
 
         <section>
-          <h2 className="mb-3 text-lg font-medium text-zinc-900">Event details</h2>
+          <h2 className="mb-3 text-lg font-medium text-zinc-900">Bracket settings</h2>
           <p className="mb-3 text-sm text-zinc-600">
-            Location, time, and description for the public event page.
+            Each matchup has this many contestants (e.g. 2 for head-to-head). This many advance to the next round (e.g.
+            1 winner).
+          </p>
+          <div className="mb-3 flex flex-wrap gap-2">
+            {BRACKET_PRESETS.map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => {
+                  setParticipantsPerMatchup(preset.n);
+                  setAdvancesPerMatchup(preset.advances);
+                }}
+                className={`rounded-lg border px-3 py-1.5 text-sm ${
+                  participantsPerMatchup === preset.n && advancesPerMatchup === preset.advances
+                    ? "border-zinc-800 bg-zinc-800 text-white"
+                    : "border-zinc-300 text-zinc-700 hover:bg-zinc-100"
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+          <form onSubmit={saveBracketSettings} className="flex flex-wrap items-end gap-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">Participants per matchup</label>
+              <input
+                type="number"
+                min={2}
+                value={participantsPerMatchup}
+                onChange={(e) => setParticipantsPerMatchup(Number(e.target.value))}
+                className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">Advances per matchup</label>
+              <input
+                type="number"
+                min={1}
+                value={advancesPerMatchup}
+                onChange={(e) => setAdvancesPerMatchup(Number(e.target.value))}
+                className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={savingBracket}
+              className="rounded-lg bg-zinc-800 px-4 py-2 text-sm text-white hover:bg-zinc-700 disabled:opacity-50"
+            >
+              {savingBracket ? "Saving…" : "Save"}
+            </button>
+          </form>
+        </section>
+      </div>
+
+      {/* Event details panel */}
+      <div
+        role="tabpanel"
+        id="panel-details"
+        aria-labelledby="tab-details"
+        hidden={activeTab !== "details"}
+        className="space-y-8 pt-4"
+      >
+        <section>
+          <h2 className="mb-3 text-lg font-medium text-zinc-900">Location, time & description</h2>
+          <p className="mb-4 text-sm text-zinc-600">
+            This information appears on the public event page so attendees know when and where the event is.
           </p>
           <form onSubmit={saveEventDetails} className="space-y-4">
             <div>
@@ -562,62 +629,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               className="rounded-lg bg-zinc-800 px-4 py-2 text-sm text-white hover:bg-zinc-700 disabled:opacity-50"
             >
               {savingDetails ? "Saving…" : "Save event details"}
-            </button>
-          </form>
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-lg font-medium text-zinc-900">Bracket settings</h2>
-          <p className="mb-3 text-sm text-zinc-600">
-            Each matchup has this many contestants (e.g. 2 for head-to-head). This many advance to the next round (e.g.
-            1 winner).
-          </p>
-          <div className="mb-3 flex flex-wrap gap-2">
-            {BRACKET_PRESETS.map((preset) => (
-              <button
-                key={preset.label}
-                type="button"
-                onClick={() => {
-                  setParticipantsPerMatchup(preset.n);
-                  setAdvancesPerMatchup(preset.advances);
-                }}
-                className={`rounded-lg border px-3 py-1.5 text-sm ${
-                  participantsPerMatchup === preset.n && advancesPerMatchup === preset.advances
-                    ? "border-zinc-800 bg-zinc-800 text-white"
-                    : "border-zinc-300 text-zinc-700 hover:bg-zinc-100"
-                }`}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-          <form onSubmit={saveBracketSettings} className="flex flex-wrap items-end gap-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700">Participants per matchup</label>
-              <input
-                type="number"
-                min={2}
-                value={participantsPerMatchup}
-                onChange={(e) => setParticipantsPerMatchup(Number(e.target.value))}
-                className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700">Advances per matchup</label>
-              <input
-                type="number"
-                min={1}
-                value={advancesPerMatchup}
-                onChange={(e) => setAdvancesPerMatchup(Number(e.target.value))}
-                className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={savingBracket}
-              className="rounded-lg bg-zinc-800 px-4 py-2 text-sm text-white hover:bg-zinc-700 disabled:opacity-50"
-            >
-              {savingBracket ? "Saving…" : "Save"}
             </button>
           </form>
         </section>
