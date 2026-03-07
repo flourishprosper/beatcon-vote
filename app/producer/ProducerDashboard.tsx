@@ -23,6 +23,12 @@ type Profile = {
   genre: string;
   productionStyle: string;
   imageUrl: string | null;
+  spotifyUrl: string | null;
+  appleMusicUrl: string | null;
+  websiteUrl: string | null;
+  bio: string | null;
+  soundCloudUrl: string | null;
+  twitterHandle: string | null;
 };
 
 type Signup = {
@@ -46,6 +52,8 @@ export function ProducerDashboard() {
   const [activeTab, setActiveTab] = useState<"profile" | "events">("profile");
   const [passwordForm, setPasswordForm] = useState({ current: "", new: "", confirm: "" });
   const [savingPassword, setSavingPassword] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -78,6 +86,28 @@ export function ProducerDashboard() {
       setMessage({ type: "success", text: "Profile updated." });
     } else {
       setMessage({ type: "error", text: data.error ?? "Failed to update profile." });
+    }
+  }
+
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setUploadError(null);
+    setUploadingPhoto(true);
+    const formData = new FormData();
+    formData.set("file", f);
+    const res = await fetch("/api/producer/upload-photo", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await res.json();
+    setUploadingPhoto(false);
+    e.target.value = "";
+    if (res.ok && data.url) {
+      setProfileForm((prev) => ({ ...prev, imageUrl: data.url }));
+      setMessage({ type: "success", text: "Photo uploaded. Save profile to keep it." });
+    } else {
+      setUploadError(data.error ?? "Upload failed");
     }
   }
 
@@ -290,12 +320,89 @@ export function ProducerDashboard() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700">Profile image URL</label>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">Profile photo</label>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="cursor-pointer rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
+                  {uploadingPhoto ? "Uploading…" : "Upload photo"}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="sr-only"
+                    disabled={uploadingPhoto}
+                    onChange={handlePhotoUpload}
+                  />
+                </label>
+                <span className="text-sm text-zinc-500">or paste URL below</span>
+              </div>
+              {uploadError && <p className="mt-1 text-sm text-red-600">{uploadError}</p>}
               <input
                 type="url"
                 value={profileForm.imageUrl ?? ""}
-                onChange={(e) => setProfileForm((f) => ({ ...f, imageUrl: e.target.value || null }))}
+                onChange={(e) => {
+                  setUploadError(null);
+                  setProfileForm((f) => ({ ...f, imageUrl: e.target.value || null }));
+                }}
                 placeholder="https://…"
+                className="mt-2 w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">Bio</label>
+              <textarea
+                rows={4}
+                value={profileForm.bio ?? ""}
+                onChange={(e) => setProfileForm((f) => ({ ...f, bio: e.target.value || null }))}
+                placeholder="Short bio for your public profile"
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">Spotify URL</label>
+              <input
+                type="url"
+                value={profileForm.spotifyUrl ?? ""}
+                onChange={(e) => setProfileForm((f) => ({ ...f, spotifyUrl: e.target.value || null }))}
+                placeholder="https://open.spotify.com/…"
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">Apple Music URL</label>
+              <input
+                type="url"
+                value={profileForm.appleMusicUrl ?? ""}
+                onChange={(e) => setProfileForm((f) => ({ ...f, appleMusicUrl: e.target.value || null }))}
+                placeholder="https://music.apple.com/…"
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">Website URL</label>
+              <input
+                type="url"
+                value={profileForm.websiteUrl ?? ""}
+                onChange={(e) => setProfileForm((f) => ({ ...f, websiteUrl: e.target.value || null }))}
+                placeholder="https://…"
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">SoundCloud URL</label>
+              <input
+                type="url"
+                value={profileForm.soundCloudUrl ?? ""}
+                onChange={(e) => setProfileForm((f) => ({ ...f, soundCloudUrl: e.target.value || null }))}
+                placeholder="https://soundcloud.com/…"
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">Twitter / X handle</label>
+              <input
+                type="text"
+                value={profileForm.twitterHandle ?? ""}
+                onChange={(e) => setProfileForm((f) => ({ ...f, twitterHandle: e.target.value || null }))}
+                placeholder="@username"
                 className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
               />
             </div>

@@ -6,6 +6,7 @@ import { slugFromStageName, ensureUniqueProducerSlug } from "@/lib/slug";
 
 const YEARS_OPTIONS = ["3-5", "6-10", "10+"] as const;
 
+const optionalUrl = z.union([z.string().url(), z.literal("")]).optional().transform((v) => v || null);
 const updateSchema = z.object({
   fullName: z.string().min(1).optional(),
   stageName: z.string().min(1).optional(),
@@ -16,6 +17,12 @@ const updateSchema = z.object({
   genre: z.string().min(1).optional(),
   productionStyle: z.string().min(1).optional(),
   imageUrl: z.string().url().optional().nullable(),
+  spotifyUrl: optionalUrl,
+  appleMusicUrl: optionalUrl,
+  websiteUrl: optionalUrl,
+  bio: z.string().optional().nullable(),
+  soundCloudUrl: optionalUrl,
+  twitterHandle: z.string().optional().nullable(),
 });
 
 export async function GET() {
@@ -39,6 +46,12 @@ export async function GET() {
       genre: true,
       productionStyle: true,
       imageUrl: true,
+      spotifyUrl: true,
+      appleMusicUrl: true,
+      websiteUrl: true,
+      bio: true,
+      soundCloudUrl: true,
+      twitterHandle: true,
     },
   });
   if (!producer) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -68,6 +81,12 @@ export async function PATCH(req: Request) {
     genre?: string;
     productionStyle?: string;
     imageUrl?: string | null;
+    spotifyUrl?: string | null;
+    appleMusicUrl?: string | null;
+    websiteUrl?: string | null;
+    bio?: string | null;
+    soundCloudUrl?: string | null;
+    twitterHandle?: string | null;
   } = { ...parsed.data };
   if (parsed.data.stageName !== undefined) {
     const baseSlug = slugFromStageName(parsed.data.stageName);
@@ -90,6 +109,12 @@ export async function PATCH(req: Request) {
       genre: true,
       productionStyle: true,
       imageUrl: true,
+      spotifyUrl: true,
+      appleMusicUrl: true,
+      websiteUrl: true,
+      bio: true,
+      soundCloudUrl: true,
+      twitterHandle: true,
     },
   });
   return NextResponse.json(producer);

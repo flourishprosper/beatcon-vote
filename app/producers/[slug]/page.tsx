@@ -17,6 +17,12 @@ export default async function ProducerPublicPage({ params }: Props) {
       cityState: true,
       yearsProducing: true,
       instagramHandle: true,
+      bio: true,
+      spotifyUrl: true,
+      appleMusicUrl: true,
+      websiteUrl: true,
+      soundCloudUrl: true,
+      twitterHandle: true,
       eventSignups: {
         include: { event: { select: { id: true, name: true, slug: true } } },
         orderBy: { createdAt: "desc" },
@@ -26,6 +32,12 @@ export default async function ProducerPublicPage({ params }: Props) {
   if (!producer) notFound();
 
   const events = producer.eventSignups;
+  const hasLinks =
+    producer.spotifyUrl ||
+    producer.appleMusicUrl ||
+    producer.websiteUrl ||
+    producer.soundCloudUrl ||
+    producer.twitterHandle;
 
   return (
     <div className="min-h-screen bg-zinc-50 p-4 py-8">
@@ -51,6 +63,63 @@ export default async function ProducerPublicPage({ params }: Props) {
           )}
           {producer.productionStyle && (
             <p className="mt-3 text-lg font-medium text-zinc-700">&ldquo;{producer.productionStyle}&rdquo;</p>
+          )}
+          {producer.bio && (
+            <p className="mt-4 text-zinc-600 whitespace-pre-wrap">{producer.bio}</p>
+          )}
+          {hasLinks && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {producer.spotifyUrl && (
+                <a
+                  href={producer.spotifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100"
+                >
+                  Spotify
+                </a>
+              )}
+              {producer.appleMusicUrl && (
+                <a
+                  href={producer.appleMusicUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100"
+                >
+                  Apple Music
+                </a>
+              )}
+              {producer.websiteUrl && (
+                <a
+                  href={producer.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100"
+                >
+                  Website
+                </a>
+              )}
+              {producer.soundCloudUrl && (
+                <a
+                  href={producer.soundCloudUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100"
+                >
+                  SoundCloud
+                </a>
+              )}
+              {producer.twitterHandle && (
+                <a
+                  href={`https://x.com/${producer.twitterHandle.replace(/^@/, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100"
+                >
+                  X / Twitter
+                </a>
+              )}
+            </div>
           )}
           <dl className="mt-4 space-y-2 text-sm">
             {producer.genre && (
@@ -93,7 +162,9 @@ export default async function ProducerPublicPage({ params }: Props) {
               <ul className="mt-2 space-y-2">
                 {events.map((s) => (
                   <li key={s.event.id} className="text-sm text-zinc-700">
-                    {s.event.name}
+                    <Link href={`/events/${s.event.slug}`} className="underline hover:text-zinc-900">
+                      {s.event.name}
+                    </Link>
                   </li>
                 ))}
               </ul>

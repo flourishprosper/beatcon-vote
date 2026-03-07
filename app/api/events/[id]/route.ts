@@ -10,6 +10,14 @@ const updateSchema = z.object({
   participantsPerMatchup: z.number().int().min(2).optional(),
   advancesPerMatchup: z.number().int().min(1).optional(),
   acceptsProducerRegistration: z.boolean().optional(),
+  description: z.string().optional().nullable(),
+  venueName: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
+  state: z.string().optional().nullable(),
+  zip: z.string().optional().nullable(),
+  eventStartsAt: z.union([z.string(), z.date()]).optional().nullable(),
+  eventEndsAt: z.union([z.string(), z.date()]).optional().nullable(),
 });
 
 export async function GET(
@@ -43,9 +51,18 @@ export async function PATCH(
   if (!parsed.success) {
     return NextResponse.json(parsed.error.flatten(), { status: 400 });
   }
+  const d = parsed.data;
   const event = await prisma.event.update({
     where: { id },
-    data: parsed.data,
+    data: {
+      ...d,
+      ...(d.eventStartsAt !== undefined && {
+        eventStartsAt: d.eventStartsAt == null ? null : new Date(d.eventStartsAt),
+      }),
+      ...(d.eventEndsAt !== undefined && {
+        eventEndsAt: d.eventEndsAt == null ? null : new Date(d.eventEndsAt),
+      }),
+    },
   });
   return NextResponse.json(event);
 }

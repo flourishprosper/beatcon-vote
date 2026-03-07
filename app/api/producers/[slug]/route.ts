@@ -17,6 +17,12 @@ export async function GET(
       cityState: true,
       yearsProducing: true,
       instagramHandle: true,
+      spotifyUrl: true,
+      appleMusicUrl: true,
+      websiteUrl: true,
+      bio: true,
+      soundCloudUrl: true,
+      twitterHandle: true,
       eventSignups: {
         include: { event: { select: { id: true, name: true, slug: true } } },
         orderBy: { createdAt: "desc" },

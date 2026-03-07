@@ -34,6 +34,14 @@ type EventDetail = {
   participantsPerMatchup: number;
   advancesPerMatchup: number;
   acceptsProducerRegistration?: boolean;
+  description?: string | null;
+  venueName?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  eventStartsAt?: string | null;
+  eventEndsAt?: string | null;
   participants: Participant[];
   rounds: Round[];
   showState: { currentMatchupId: string | null } | null;
@@ -76,6 +84,17 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const [addingSignupId, setAddingSignupId] = useState<string | null>(null);
   const [acceptsProducerRegistration, setAcceptsProducerRegistration] = useState(false);
   const [savingAcceptsRegistration, setSavingAcceptsRegistration] = useState(false);
+  const [eventDetails, setEventDetails] = useState({
+    description: "",
+    venueName: "",
+    address: "",
+    city: "",
+    state: "",
+    zip: "",
+    eventStartsAt: "",
+    eventEndsAt: "",
+  });
+  const [savingDetails, setSavingDetails] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -97,6 +116,16 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         setParticipantsPerMatchup(data.participantsPerMatchup ?? 2);
         setAdvancesPerMatchup(data.advancesPerMatchup ?? 1);
         setAcceptsProducerRegistration(data.acceptsProducerRegistration ?? false);
+        setEventDetails({
+          description: data.description ?? "",
+          venueName: data.venueName ?? "",
+          address: data.address ?? "",
+          city: data.city ?? "",
+          state: data.state ?? "",
+          zip: data.zip ?? "",
+          eventStartsAt: data.eventStartsAt ? new Date(data.eventStartsAt).toISOString().slice(0, 16) : "",
+          eventEndsAt: data.eventEndsAt ? new Date(data.eventEndsAt).toISOString().slice(0, 16) : "",
+        });
       })
       .finally(() => setLoading(false));
   }, [id]);
@@ -229,6 +258,29 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     }
   }
 
+  async function saveEventDetails(e: React.FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+    setSavingDetails(true);
+    const res = await fetch(`/api/events/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        description: eventDetails.description || null,
+        venueName: eventDetails.venueName || null,
+        address: eventDetails.address || null,
+        city: eventDetails.city || null,
+        state: eventDetails.state || null,
+        zip: eventDetails.zip || null,
+        eventStartsAt: eventDetails.eventStartsAt ? new Date(eventDetails.eventStartsAt).toISOString() : null,
+        eventEndsAt: eventDetails.eventEndsAt ? new Date(eventDetails.eventEndsAt).toISOString() : null,
+      }),
+    });
+    const data = await res.json();
+    setSavingDetails(false);
+    if (res.ok) setEvent((prev) => (prev ? { ...prev, ...data } : null));
+  }
+
   async function addSignupToEvent(signupId: string) {
     if (!id) return;
     setAddingSignupId(signupId);
@@ -303,6 +355,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         <h1 className="text-2xl font-semibold text-zinc-900">{event.name}</h1>
         <p className="text-zinc-500">Slug: {event.slug} · Max votes per user: {event.maxVotesPerUser}</p>
         <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            href={`/events/${event.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
+          >
+            View public page
+          </Link>
           <Link
             href={`/display/qr?eventId=${id}`}
             className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white hover:bg-zinc-800"
@@ -409,6 +469,101 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               )}
             </li>
           </ol>
+        </section>
+
+        <section>
+          <h2 className="mb-3 text-lg font-medium text-zinc-900">Event details</h2>
+          <p className="mb-3 text-sm text-zinc-600">
+            Location, time, and description for the public event page.
+          </p>
+          <form onSubmit={saveEventDetails} className="space-y-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">Description</label>
+              <textarea
+                rows={3}
+                value={eventDetails.description}
+                onChange={(e) => setEventDetails((d) => ({ ...d, description: e.target.value }))}
+                placeholder="What the event is about"
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">Venue name</label>
+              <input
+                type="text"
+                value={eventDetails.venueName}
+                onChange={(e) => setEventDetails((d) => ({ ...d, venueName: e.target.value }))}
+                placeholder="Venue or venue name"
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">Address</label>
+              <input
+                type="text"
+                value={eventDetails.address}
+                onChange={(e) => setEventDetails((d) => ({ ...d, address: e.target.value }))}
+                placeholder="Street address"
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-zinc-700">City</label>
+                <input
+                  type="text"
+                  value={eventDetails.city}
+                  onChange={(e) => setEventDetails((d) => ({ ...d, city: e.target.value }))}
+                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-zinc-700">State</label>
+                <input
+                  type="text"
+                  value={eventDetails.state}
+                  onChange={(e) => setEventDetails((d) => ({ ...d, state: e.target.value }))}
+                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-zinc-700">ZIP</label>
+                <input
+                  type="text"
+                  value={eventDetails.zip}
+                  onChange={(e) => setEventDetails((d) => ({ ...d, zip: e.target.value }))}
+                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-zinc-700">Event start</label>
+                <input
+                  type="datetime-local"
+                  value={eventDetails.eventStartsAt}
+                  onChange={(e) => setEventDetails((d) => ({ ...d, eventStartsAt: e.target.value }))}
+                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-zinc-700">Event end</label>
+                <input
+                  type="datetime-local"
+                  value={eventDetails.eventEndsAt}
+                  onChange={(e) => setEventDetails((d) => ({ ...d, eventEndsAt: e.target.value }))}
+                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={savingDetails}
+              className="rounded-lg bg-zinc-800 px-4 py-2 text-sm text-white hover:bg-zinc-700 disabled:opacity-50"
+            >
+              {savingDetails ? "Saving…" : "Save event details"}
+            </button>
+          </form>
         </section>
 
         <section>
