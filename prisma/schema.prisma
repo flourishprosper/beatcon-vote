@@ -1,10 +1,10 @@
-// Live voting app - SQLite for dev; switch to postgres for production via DATABASE_URL
+// Live voting app - PostgreSQL (Neon in production; connection in prisma.config.ts + adapter in lib/db)
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model Admin {

@@ -5,8 +5,10 @@ Live voting app: admin manages events, rounds, and matchups; voters scan a QR co
 ## Setup
 
 1. Install dependencies: `npm install`
-2. Copy `.env` and set `DATABASE_URL` (default: `file:./prisma/dev.db` for SQLite). Set `NEXTAUTH_SECRET` and `NEXTAUTH_URL` for auth.
-3. Create DB and seed admin: `npm run db:migrate` then `npm run db:seed`
+2. Copy `.env.example` to `.env` and set:
+   - **Neon PostgreSQL**: `DATABASE_URL` (pooled) and `DIRECT_URL` (direct). Netlify may inject `NETLIFY_DATABASE_URL` and `NETLIFY_DATABASE_URL_UNPOOLED` instead; the app uses both naming conventions.
+   - **NextAuth**: `NEXTAUTH_SECRET` and `NEXTAUTH_URL`
+3. Run migrations: `npx prisma migrate deploy` (or `npm run db:migrate` for dev). Seed admin: `npm run db:seed`
 4. Default admin: `admin@beatcon.local` / `admin123` (override with `ADMIN_EMAIL` and `ADMIN_PASSWORD` when running seed)
 
 ## Run
@@ -29,6 +31,11 @@ Live voting app: admin manages events, rounds, and matchups; voters scan a QR co
 
 4. **Bracket display** – Open `/display/bracket?eventId=<eventId>` on a TV/LED. Read-only bracket and live scores; refreshes via SSE and polling.
 
+## Deploy (Netlify)
+
+- Set env vars in Netlify: `DATABASE_URL` (pooled Neon), `DIRECT_URL` (direct Neon), `NEXTAUTH_SECRET`, `NEXTAUTH_URL`. If you use the Netlify–Neon integration, `NETLIFY_DATABASE_URL` and `NETLIFY_DATABASE_URL_UNPOOLED` are set automatically.
+- Build runs `prisma generate`, `prisma migrate deploy`, then `next build` (see `netlify.toml`).
+
 ## Tech
 
-- Next.js 16 (App Router), TypeScript, Tailwind, Prisma (SQLite dev), NextAuth (admin credentials), Server-Sent Events for real-time updates.
+- Next.js 16 (App Router), TypeScript, Tailwind, Prisma (PostgreSQL via Neon), NextAuth (admin credentials), Server-Sent Events for real-time updates.
