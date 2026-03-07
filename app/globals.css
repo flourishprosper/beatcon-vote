@@ -3,14 +3,15 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  /* Landing page palette */
-  --lander-bg: #080808;
-  --lander-surface: #111111;
-  --lander-border: #262626;
-  --lander-muted: #a3a3a3;
-  --lander-accent: #f59e0b;
-  --lander-accent-hover: #fbbf24;
-  --lander-text: #fafafa;
+  /* Landing page palette (BeatCon brand) */
+  --lander-bg: #00154e;
+  --lander-surface: #001a5c;
+  --lander-border: rgba(222, 255, 0, 0.2);
+  --lander-muted: rgba(222, 255, 0, 0.85);
+  --lander-accent: #deff00;
+  --lander-accent-hover: #e5ff33;
+  --lander-on-accent: #00154e;
+  --lander-text: #deff00;
 }
 
 @theme inline {

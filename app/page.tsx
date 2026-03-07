@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const TICKET_URL = process.env.NEXT_PUBLIC_TICKET_URL ?? "#";
@@ -15,7 +16,16 @@ export default function HomePage() {
         {/* Nav */}
         <header className="border-b border-[var(--lander-border)]/80 bg-[var(--lander-bg)]/90 backdrop-blur-md sticky top-0 z-20">
           <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
-            <span className="font-display text-lg font-bold tracking-tight">BEATCON</span>
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/beatcon-logo.png"
+                alt="BeatCon"
+                width={120}
+                height={40}
+                className="h-8 w-auto object-contain sm:h-10"
+                priority
+              />
+            </Link>
             <div className="flex items-center gap-4 sm:gap-6">
               <a
                 href="#producers"
@@ -39,7 +49,7 @@ export default function HomePage() {
                 href={TICKET_URL}
                 target={TICKET_URL.startsWith("http") ? "_blank" : undefined}
                 rel={TICKET_URL.startsWith("http") ? "noopener noreferrer" : undefined}
-                className="rounded-full bg-[var(--lander-accent)] px-4 py-2 text-sm font-semibold text-[var(--lander-bg)] transition-colors hover:bg-[var(--lander-accent-hover)]"
+                className="rounded-full bg-[var(--lander-accent)] px-4 py-2 text-sm font-semibold text-[var(--lander-on-accent)] transition-colors hover:bg-[var(--lander-accent-hover)]"
               >
                 Get tickets
               </a>
@@ -50,6 +60,16 @@ export default function HomePage() {
         {/* Hero */}
         <section className="px-5 pt-16 pb-24 sm:px-8 sm:pt-24 sm:pb-32">
           <div className="mx-auto max-w-6xl">
+            <Link href="/" className="lander-reveal mb-8 inline-block" style={{ animationDelay: "0.05s", opacity: 0 }}>
+              <Image
+                src="/beatcon-logo.png"
+                alt="BeatCon"
+                width={200}
+                height={72}
+                className="h-14 w-auto object-contain sm:h-20"
+                priority
+              />
+            </Link>
             <p
               className="lander-reveal mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--lander-accent)]"
               style={{ animationDelay: "0.1s", opacity: 0 }}
@@ -76,7 +96,7 @@ export default function HomePage() {
                 href={TICKET_URL}
                 target={TICKET_URL.startsWith("http") ? "_blank" : undefined}
                 rel={TICKET_URL.startsWith("http") ? "noopener noreferrer" : undefined}
-                className="inline-flex items-center gap-2 rounded-full bg-[var(--lander-accent)] px-8 py-4 text-base font-bold text-[var(--lander-bg)] transition-all hover:bg-[var(--lander-accent-hover)] hover:scale-[1.02] active:scale-[0.98]"
+                className="inline-flex items-center gap-2 rounded-full bg-[var(--lander-accent)] px-8 py-4 text-base font-bold text-[var(--lander-on-accent)] transition-all hover:bg-[var(--lander-accent-hover)] hover:scale-[1.02] active:scale-[0.98]"
               >
                 Buy tickets
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -107,7 +127,7 @@ export default function HomePage() {
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Link
                     href="/register"
-                    className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-[var(--lander-bg)] transition-colors hover:bg-[var(--lander-muted)]"
+                    className="rounded-full bg-[var(--lander-accent)] px-6 py-3 text-sm font-semibold text-[var(--lander-on-accent)] transition-colors hover:bg-[var(--lander-accent-hover)]"
                   >
                     Create producer account
                   </Link>
@@ -166,7 +186,7 @@ export default function HomePage() {
                     </p>
                     <p className="mt-0.5 text-sm text-[var(--lander-muted)]">{item.description}</p>
                   </div>
-                  <span className="rounded-full bg-[var(--lander-bg)] p-2 text-[var(--lander-accent)] transition-colors group-hover:bg-[var(--lander-accent)] group-hover:text-[var(--lander-bg)]">
+                  <span className="rounded-full bg-[var(--lander-bg)] p-2 text-[var(--lander-accent)] transition-colors group-hover:bg-[var(--lander-accent)] group-hover:text-[var(--lander-on-accent)]">
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
@@ -190,7 +210,7 @@ export default function HomePage() {
               href={TICKET_URL}
               target={TICKET_URL.startsWith("http") ? "_blank" : undefined}
               rel={TICKET_URL.startsWith("http") ? "noopener noreferrer" : undefined}
-              className="mt-8 inline-flex items-center gap-2 rounded-full bg-[var(--lander-accent)] px-10 py-4 text-lg font-bold text-[var(--lander-bg)] transition-all hover:bg-[var(--lander-accent-hover)] hover:scale-[1.02] active:scale-[0.98]"
+              className="mt-8 inline-flex items-center gap-2 rounded-full bg-[var(--lander-accent)] px-10 py-4 text-lg font-bold text-[var(--lander-on-accent)] transition-all hover:bg-[var(--lander-accent-hover)] hover:scale-[1.02] active:scale-[0.98]"
             >
               Get tickets
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -203,7 +223,15 @@ export default function HomePage() {
         {/* Footer */}
         <footer className="border-t border-[var(--lander-border)] px-5 py-8 sm:px-8">
           <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
-            <span className="font-display text-sm font-semibold text-[var(--lander-muted)]">BEATCON</span>
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/beatcon-logo.png"
+                alt="BeatCon"
+                width={84}
+                height={28}
+                className="h-7 w-auto object-contain opacity-90 hover:opacity-100"
+              />
+            </Link>
             <div className="flex gap-6 text-sm text-[var(--lander-muted)]">
               <Link href="/register" className="transition-colors hover:text-[var(--lander-text)]">
                 Producer sign up
