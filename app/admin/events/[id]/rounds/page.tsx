@@ -67,8 +67,7 @@ export default function EventRoundsPage({ params }: { params: Promise<{ id: stri
     }
   }
 
-  async function generateFirstRound(e: React.FormEvent) {
-    e.preventDefault();
+  async function generateFirstRound() {
     setError(null);
     setGenerating(true);
     const res = await fetch(`/api/events/${id}/rounds/generate-initial`, {
@@ -170,51 +169,61 @@ export default function EventRoundsPage({ params }: { params: Promise<{ id: stri
       <h1 className="mb-6 text-2xl font-semibold text-zinc-900">Rounds & matchups</h1>
 
       {rounds.length === 0 && (
-        <div className="mb-8 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+        <div className="mb-8 rounded-xl border border-zinc-200 bg-zinc-50 p-5">
+          <h2 className="mb-2 text-lg font-medium text-zinc-900">Create first round</h2>
           <p className="mb-3 text-sm text-zinc-700">
-            Generate the first round by randomly shuffling all participants into matchups of {n}.
+            This shuffles all {event.participants.length} participants into random matchups of {n}. You need at least 2
+            participants and bracket settings set on the Event page.
           </p>
+          {(event?.participants?.length ?? 0) < 2 && (
+            <p className="mb-3 text-sm text-amber-700">
+              Add at least 2 participants on the Event page first.
+            </p>
+          )}
           <button
             type="button"
             onClick={generateFirstRound}
             disabled={generating || (event?.participants?.length ?? 0) < 2}
             className="rounded-lg bg-zinc-900 px-4 py-2 text-white hover:bg-zinc-800 disabled:opacity-50"
           >
-            {generating ? "Generating…" : "Generate first round"}
+            {generating ? "Generating…" : "Create first round"}
           </button>
         </div>
       )}
 
-      <form onSubmit={addRound} className="mb-8 flex flex-wrap items-end gap-2">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700">New round label</label>
-          <input
-            type="text"
-            value={newRoundLabel}
-            onChange={(e) => setNewRoundLabel(e.target.value)}
-            placeholder="e.g. Quarter-finals"
-            required
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700">Index</label>
-          <input
-            type="number"
-            min={0}
-            value={newRoundIndex}
-            onChange={(e) => setNewRoundIndex(Number(e.target.value))}
-            className="w-20 rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-white hover:bg-zinc-800 disabled:opacity-50"
-        >
-          {submitting ? "Adding…" : "Add round"}
-        </button>
-      </form>
+      <div className="mb-8">
+        <p className="mb-2 text-sm text-zinc-500">Or add an empty round manually</p>
+        <form onSubmit={addRound} className="flex flex-wrap items-end gap-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-zinc-700">New round label</label>
+            <input
+              type="text"
+              value={newRoundLabel}
+              onChange={(e) => setNewRoundLabel(e.target.value)}
+              placeholder="e.g. Quarter-finals"
+              required
+              className="rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-zinc-700">Index (usually leave as-is)</label>
+            <input
+              type="number"
+              min={0}
+              value={newRoundIndex}
+              onChange={(e) => setNewRoundIndex(Number(e.target.value))}
+              className="w-20 rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="rounded-lg bg-zinc-900 px-4 py-2 text-white hover:bg-zinc-800 disabled:opacity-50"
+          >
+            {submitting ? "Adding…" : "Add round"}
+          </button>
+        </form>
+      </div>
 
       <div className="space-y-6">
         {rounds.map((r) => (
@@ -248,9 +257,10 @@ export default function EventRoundsPage({ params }: { params: Promise<{ id: stri
                   type="button"
                   onClick={() => finalizeRound(r.id)}
                   disabled={finalizingRoundId !== null || (r.matchups ?? []).length === 0}
+                  title="Uses the top N vote-getters from each matchup (N = advances per matchup in Event settings)."
                   className="text-sm text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
                 >
-                  {finalizingRoundId === r.id ? "Finalizing…" : "Finalize & create next round"}
+                  {finalizingRoundId === r.id ? "Finalizing…" : "Create next round from winners"}
                 </button>
                 <button type="button" onClick={() => deleteRound(r.id)} className="text-sm text-red-600 hover:text-red-700">
                   Delete round
@@ -285,21 +295,27 @@ export default function EventRoundsPage({ params }: { params: Promise<{ id: stri
                       value={m.status}
                       onChange={(e) => updateMatchup(m.id, { status: e.target.value })}
                       className="rounded border border-zinc-300 px-2 py-1 text-sm"
+                      title="Pending / Live / Completed"
                     >
                       <option value="pending">Pending</option>
                       <option value="live">Live</option>
                       <option value="completed">Completed</option>
                     </select>
-                    <input
-                      type="datetime-local"
-                      value={m.voteEndsAt ? new Date(m.voteEndsAt).toISOString().slice(0, 16) : ""}
-                      onChange={(e) =>
-                        updateMatchup(m.id, {
-                          voteEndsAt: e.target.value ? new Date(e.target.value).toISOString() : null,
-                        })
-                      }
-                      className="rounded border border-zinc-300 px-2 py-1 text-sm"
-                    />
+                    <span className="flex items-center gap-1">
+                      <input
+                        type="datetime-local"
+                        value={m.voteEndsAt ? new Date(m.voteEndsAt).toISOString().slice(0, 16) : ""}
+                        onChange={(e) =>
+                          updateMatchup(m.id, {
+                            voteEndsAt: e.target.value ? new Date(e.target.value).toISOString() : null,
+                          })
+                        }
+                        className="rounded border border-zinc-300 px-2 py-1 text-sm"
+                        title="Voting ends (optional)"
+                        aria-label="Voting ends (optional)"
+                      />
+                      <span className="text-xs text-zinc-400">Voting ends (optional)</span>
+                    </span>
                     <button
                       type="button"
                       onClick={() => deleteMatchup(r.id, m.id)}

@@ -103,6 +103,9 @@ export default function NewEventPage() {
             Cancel
           </Link>
         </div>
+        <p className="mt-4 text-sm text-zinc-500">
+          Next: set bracket settings and add participants on the event page.
+        </p>
       </form>
     </div>
   );
