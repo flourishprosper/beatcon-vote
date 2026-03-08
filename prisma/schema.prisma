@@ -62,6 +62,21 @@ model Producer {
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
   eventSignups     ProducerEventSignup[]
+  media            ProducerMedia[]
+}
+
+model ProducerMedia {
+  id          String   @id @default(cuid())
+  producerId  String   @map("producer_id")
+  producer    Producer @relation(fields: [producerId], references: [id], onDelete: Cascade)
+  url         String
+  kind        String   // image | audio | video
+  displayName String?  @map("display_name")
+  sizeBytes   Int?     @map("size_bytes")
+  mimeType    String?  @map("mime_type")
+  createdAt   DateTime @default(now())
+
+  @@index([producerId])
 }
 
 model ProducerEventSignup {

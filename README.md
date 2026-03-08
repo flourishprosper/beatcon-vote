@@ -34,6 +34,7 @@ Live voting app: admin manages events, rounds, and matchups; voters scan a QR co
 ## Deploy (Netlify)
 
 - Set env vars in Netlify: `DATABASE_URL` (pooled Neon), `DIRECT_URL` (direct Neon), `NEXTAUTH_SECRET`, `NEXTAUTH_URL`. If you use the Netlify–Neon integration, `NETLIFY_DATABASE_URL` and `NETLIFY_DATABASE_URL_UNPOOLED` are set automatically.
+- For producer profile and media uploads, set all `DO_SPACES_*` variables (see `.env.example`). You can remove `BLOB_READ_WRITE_TOKEN` if fully migrated from Vercel Blob.
 - Build runs `prisma generate`, `prisma migrate deploy`, then `next build` (see `netlify.toml`).
 
 ## Tech

@@ -95,17 +95,38 @@ export default function ProducerProfilePage() {
     if (!f) return;
     setUploadError(null);
     setUploadingPhoto(true);
-    const formData = new FormData();
-    formData.set("file", f);
-    const res = await fetch("/api/producer/upload-photo", { method: "POST", body: formData });
-    const data = await res.json();
-    setUploadingPhoto(false);
-    e.target.value = "";
-    if (res.ok && data.url) {
-      setProfileForm((prev) => ({ ...prev, imageUrl: data.url }));
+    try {
+      const urlRes = await fetch("/api/producer/upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: f.name,
+          contentType: f.type,
+          kind: "image",
+          size: f.size,
+        }),
+      });
+      const urlData = await urlRes.json();
+      if (!urlRes.ok) {
+        setUploadError(urlData.error ?? "Could not get upload URL");
+        return;
+      }
+      const putRes = await fetch(urlData.uploadUrl, {
+        method: "PUT",
+        body: f,
+        headers: { "Content-Type": f.type },
+      });
+      if (!putRes.ok) {
+        setUploadError("Upload to storage failed");
+        return;
+      }
+      setProfileForm((prev) => ({ ...prev, imageUrl: urlData.publicUrl }));
       setMessage({ type: "success", text: "Photo uploaded. Save profile to keep it." });
-    } else {
-      setUploadError(data.error ?? "Upload failed");
+    } catch {
+      setUploadError("Upload failed");
+    } finally {
+      setUploadingPhoto(false);
+      e.target.value = "";
     }
   }
 
