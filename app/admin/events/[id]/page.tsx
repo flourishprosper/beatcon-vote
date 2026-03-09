@@ -26,6 +26,13 @@ type ProducerSignupRow = {
   createdAt: string;
   producer: { id: string; stageName: string; slug: string; email: string };
 };
+type ProducerRow = {
+  id: string;
+  stageName: string;
+  slug: string;
+  email: string;
+  fullName: string;
+};
 type EventDetail = {
   id: string;
   name: string;
@@ -79,6 +86,11 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const [firstRoundError, setFirstRoundError] = useState<string | null>(null);
   const [producerSignups, setProducerSignups] = useState<ProducerSignupRow[]>([]);
   const [addingSignupId, setAddingSignupId] = useState<string | null>(null);
+  const [allProducers, setAllProducers] = useState<ProducerRow[]>([]);
+  const [producerSearch, setProducerSearch] = useState("");
+  const [selectedProducerId, setSelectedProducerId] = useState<string | null>(null);
+  const [addingProducerId, setAddingProducerId] = useState<string | null>(null);
+  const [producersLoading, setProducersLoading] = useState(false);
   const [acceptsProducerRegistration, setAcceptsProducerRegistration] = useState(false);
   const [savingAcceptsRegistration, setSavingAcceptsRegistration] = useState(false);
   const [eventDetails, setEventDetails] = useState({
@@ -133,6 +145,16 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       .then((r) => (r.ok ? r.json() : []))
       .then(setProducerSignups);
   }, [id, event?.participants.length]);
+
+  useEffect(() => {
+    if (activeTab !== "participants") return;
+    setProducersLoading(true);
+    const q = producerSearch.trim() || undefined;
+    fetch(`/api/admin/producers${q ? `?q=${encodeURIComponent(q)}` : ""}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setAllProducers)
+      .finally(() => setProducersLoading(false));
+  }, [activeTab, producerSearch]);
 
   async function setCurrentMatchup(matchupId: string | null) {
     if (!id) return;
@@ -272,6 +294,24 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       setProducerSignups((prev) =>
         prev.map((s) => (s.id === signupId ? { ...s, participantId: data.id } : s))
       );
+    }
+  }
+
+  async function addProducerToEvent(producerId: string) {
+    if (!id) return;
+    setAddingProducerId(producerId);
+    const res = await fetch(`/api/events/${id}/producer-signups`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ producerId }),
+    });
+    const data = await res.json();
+    setAddingProducerId(null);
+    if (res.ok) {
+      setEvent((prev) => (prev ? { ...prev, participants: [...prev.participants, data] } : null));
+      const signupsRes = await fetch(`/api/events/${id}/producer-signups`);
+      if (signupsRes.ok) signupsRes.json().then(setProducerSignups);
+      setSelectedProducerId(null);
     }
   }
 
@@ -619,6 +659,60 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         className="space-y-8 pt-4"
       >
         <section>
+          <h2 className="mb-3 text-lg font-medium text-zinc-900">Add producer to event</h2>
+          <p className="mb-3 text-sm text-zinc-600">
+            Look up any producer in the system and add them as a participant. Only producers who already have an account can be added.
+          </p>
+          {(() => {
+            const alreadyAddedIds = new Set(
+              producerSignups.filter((s) => s.participantId).map((s) => s.producer.id)
+            );
+            const availableProducers = allProducers.filter((p) => !alreadyAddedIds.has(p.id));
+            return (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={producerSearch}
+                  onChange={(e) => setProducerSearch(e.target.value)}
+                  placeholder="Search by name or email…"
+                  className="w-full max-w-sm rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+                />
+                {producersLoading ? (
+                  <p className="text-sm text-zinc-500">Loading producers…</p>
+                ) : availableProducers.length === 0 ? (
+                  <p className="text-sm text-zinc-500">
+                    {allProducers.length === 0 ? "No producers found." : "All listed producers are already in the event."}
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={selectedProducerId ?? ""}
+                      onChange={(e) => setSelectedProducerId(e.target.value || null)}
+                      className="min-w-[200px] rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+                    >
+                      <option value="">— Select a producer —</option>
+                      {availableProducers.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.stageName} ({p.email})
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={!selectedProducerId || !!addingProducerId}
+                      onClick={() => selectedProducerId && addProducerToEvent(selectedProducerId)}
+                      className="rounded-lg bg-zinc-800 px-4 py-2 text-sm text-white hover:bg-zinc-700 disabled:opacity-50"
+                    >
+                      {addingProducerId ? "Adding…" : "Add to event"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </section>
+
+        <section>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-medium text-zinc-900">Participants</h2>
             <Link
@@ -632,7 +726,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50/80 p-4">
               <p className="mb-2 text-sm font-medium text-amber-900">Add your first participants</p>
               <p className="text-sm text-amber-800">
-                Participants are added only from the <strong>Producer signups</strong> section below. Turn on &quot;Accept producer registration&quot; so producers can sign up; then add them to the bracket from that list. You need at least 2 participants to create your first round.
+                Add participants from the <strong>Add producer to event</strong> section above, or from the <strong>Producer signups</strong> section below (after turning on &quot;Accept producer registration&quot;). You need at least 2 participants to create your first round.
               </p>
               <Link
                 href={`/admin/events/${id}/participants`}
@@ -645,7 +739,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           {event.participants.length === 1 && (
             <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50/80 p-3">
               <p className="text-sm text-amber-800">
-                Add at least one more participant to create matchups. Add them from the <strong>Producer signups</strong> section below.
+                Add at least one more participant to create matchups. Use <strong>Add producer to event</strong> above or the <strong>Producer signups</strong> section below.
               </p>
             </div>
           )}
@@ -664,7 +758,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         <section>
           <h2 className="mb-3 text-lg font-medium text-zinc-900">Producer signups</h2>
           <p className="mb-3 text-sm text-zinc-600">
-            Producers can register for this event when &quot;Accept producer registration&quot; is on. Only people who have signed up can be added as participants; add them to the bracket below.
+            Producers who have signed up for this event appear below. You can also add any producer in the system using <strong>Add producer to event</strong> above.
           </p>
           <label className="mb-4 flex items-center gap-2">
             <input
