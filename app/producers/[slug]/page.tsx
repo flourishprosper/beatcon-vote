@@ -4,6 +4,23 @@ import { prisma } from "@/lib/db";
 
 type Props = { params: Promise<{ slug: string }> };
 
+const linkConfig = [
+  { key: "spotifyUrl" as const, label: "Spotify", href: (v: string) => v },
+  { key: "appleMusicUrl" as const, label: "Apple Music", href: (v: string) => v },
+  { key: "soundCloudUrl" as const, label: "SoundCloud", href: (v: string) => v },
+  { key: "websiteUrl" as const, label: "Website", href: (v: string) => v },
+  {
+    key: "twitterHandle" as const,
+    label: "X",
+    href: (h: string) => `https://x.com/${h.replace(/^@/, "")}`,
+  },
+  {
+    key: "instagramHandle" as const,
+    label: "Instagram",
+    href: (h: string) => `https://instagram.com/${h.replace(/^@/, "")}`,
+  },
+];
+
 export default async function ProducerPublicPage({ params }: Props) {
   const { slug } = await params;
   const producer = await prisma.producer.findUnique({
@@ -32,147 +49,138 @@ export default async function ProducerPublicPage({ params }: Props) {
   if (!producer) notFound();
 
   const events = producer.eventSignups;
-  const hasLinks =
-    producer.spotifyUrl ||
-    producer.appleMusicUrl ||
-    producer.websiteUrl ||
-    producer.soundCloudUrl ||
-    producer.twitterHandle;
+  const musicAndSocialLinks = linkConfig.filter((c) => {
+    const val = producer[c.key];
+    return typeof val === "string" && val.trim() !== "";
+  });
+
+  const hasDetails =
+    producer.genre || producer.cityState || producer.yearsProducing;
 
   return (
-    <div className="min-h-screen bg-zinc-50 p-4 py-8">
-      <div className="mx-auto max-w-lg">
-        <p className="mb-6 text-sm text-zinc-500">
-          <Link href="/" className="underline">BeatCon Vote</Link>
-          {" / "}
-          <span className="text-zinc-700">Producer</span>
-        </p>
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-          {producer.imageUrl && (
-            <div className="mb-4 flex justify-center">
-              <img
-                src={producer.imageUrl}
-                alt={producer.stageName}
-                className="h-32 w-32 rounded-full object-cover"
-              />
-            </div>
-          )}
-          <h1 className="text-3xl font-bold text-zinc-900">{producer.stageName}</h1>
-          {producer.fullName && producer.fullName !== producer.stageName && (
-            <p className="mt-1 text-zinc-600">{producer.fullName}</p>
-          )}
-          {producer.productionStyle && (
-            <p className="mt-3 text-lg font-medium text-zinc-700">&ldquo;{producer.productionStyle}&rdquo;</p>
-          )}
-          {producer.bio && (
-            <p className="mt-4 text-zinc-600 whitespace-pre-wrap">{producer.bio}</p>
-          )}
-          {hasLinks && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {producer.spotifyUrl && (
-                <a
-                  href={producer.spotifyUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100"
+    <div className="min-h-screen bg-gradient-to-b from-zinc-100 to-zinc-50">
+      <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
+        <nav className="mb-8">
+          <Link
+            href="/"
+            className="text-sm font-medium text-zinc-500 transition hover:text-zinc-800"
+          >
+            ← BeatCon Vote
+          </Link>
+        </nav>
+
+        {/* Hero */}
+        <header className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm sm:p-8">
+          <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left sm:gap-8">
+            <div className="shrink-0">
+              {producer.imageUrl ? (
+                <img
+                  src={producer.imageUrl}
+                  alt={producer.stageName}
+                  className="h-28 w-28 rounded-full object-cover ring-2 ring-zinc-200 sm:h-36 sm:w-36"
+                />
+              ) : (
+                <div
+                  className="flex h-28 w-28 items-center justify-center rounded-full bg-zinc-200 text-3xl font-bold text-zinc-400 sm:h-36 sm:w-36"
+                  aria-hidden
                 >
-                  Spotify
-                </a>
-              )}
-              {producer.appleMusicUrl && (
-                <a
-                  href={producer.appleMusicUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100"
-                >
-                  Apple Music
-                </a>
-              )}
-              {producer.websiteUrl && (
-                <a
-                  href={producer.websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100"
-                >
-                  Website
-                </a>
-              )}
-              {producer.soundCloudUrl && (
-                <a
-                  href={producer.soundCloudUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100"
-                >
-                  SoundCloud
-                </a>
-              )}
-              {producer.twitterHandle && (
-                <a
-                  href={`https://x.com/${producer.twitterHandle.replace(/^@/, "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100"
-                >
-                  X / Twitter
-                </a>
+                  {producer.stageName.charAt(0).toUpperCase()}
+                </div>
               )}
             </div>
-          )}
-          <dl className="mt-4 space-y-2 text-sm">
-            {producer.genre && (
-              <>
-                <dt className="font-medium text-zinc-500">Genre</dt>
-                <dd className="text-zinc-900">{producer.genre}</dd>
-              </>
-            )}
-            {producer.cityState && (
-              <>
-                <dt className="font-medium text-zinc-500">Location</dt>
-                <dd className="text-zinc-900">{producer.cityState}</dd>
-              </>
-            )}
-            {producer.yearsProducing && (
-              <>
-                <dt className="font-medium text-zinc-500">Years producing</dt>
-                <dd className="text-zinc-900">{producer.yearsProducing}</dd>
-              </>
-            )}
-            {producer.instagramHandle && (
-              <>
-                <dt className="font-medium text-zinc-500">Instagram</dt>
-                <dd>
+            <div className="mt-4 min-w-0 flex-1 sm:mt-0">
+              <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
+                {producer.stageName}
+              </h1>
+              {producer.fullName && producer.fullName !== producer.stageName && (
+                <p className="mt-0.5 text-zinc-600">{producer.fullName}</p>
+              )}
+              {producer.productionStyle && (
+                <p className="mt-2 text-lg italic text-zinc-700">
+                  &ldquo;{producer.productionStyle}&rdquo;
+                </p>
+              )}
+              {hasDetails && (
+                <ul className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-zinc-500 sm:justify-start">
+                  {producer.genre && (
+                    <li>
+                      <span className="font-medium text-zinc-600">Genre:</span>{" "}
+                      {producer.genre}
+                    </li>
+                  )}
+                  {producer.cityState && <li>{producer.cityState}</li>}
+                  {producer.yearsProducing && (
+                    <li>{producer.yearsProducing} producing</li>
+                  )}
+                </ul>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Bio */}
+        {producer.bio && (
+          <section className="mt-6 rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+              About
+            </h2>
+            <p className="mt-3 whitespace-pre-wrap text-zinc-700">
+              {producer.bio}
+            </p>
+          </section>
+        )}
+
+        {/* Listen & connect */}
+        {musicAndSocialLinks.length > 0 && (
+          <section className="mt-6 rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+              Listen & connect
+            </h2>
+            <div className="mt-4 flex flex-wrap gap-3">
+              {musicAndSocialLinks.map(({ key, label, href }) => {
+                const val = producer[key] as string;
+                const url = href(val);
+                return (
                   <a
-                    href={`https://instagram.com/${producer.instagramHandle.replace(/^@/, "")}`}
+                    key={key}
+                    href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-zinc-900 underline hover:text-zinc-700"
+                    className="inline-flex items-center rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm font-medium text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-100"
                   >
-                    {producer.instagramHandle}
+                    {label}
                   </a>
-                </dd>
-              </>
-            )}
-          </dl>
-          {events.length > 0 && (
-            <section className="mt-6 border-t border-zinc-200 pt-4">
-              <h2 className="text-lg font-medium text-zinc-900">BEATCON events</h2>
-              <ul className="mt-2 space-y-2">
-                {events.map((s) => (
-                  <li key={s.event.id} className="text-sm text-zinc-700">
-                    <Link href={`/events/${s.event.slug}`} className="underline hover:text-zinc-900">
-                      {s.event.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-        </div>
-        <p className="mt-6 text-center text-sm text-zinc-500">
-          <Link href="/" className="underline">Back to home</Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* BeatCon events */}
+        {events.length > 0 && (
+          <section className="mt-6 rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+              BeatCon events
+            </h2>
+            <ul className="mt-4 space-y-2">
+              {events.map((s) => (
+                <li key={s.event.id}>
+                  <Link
+                    href={`/events/${s.event.slug}`}
+                    className="block rounded-lg border border-zinc-100 py-3 px-4 text-zinc-800 transition hover:border-zinc-200 hover:bg-zinc-50"
+                  >
+                    {s.event.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <p className="mt-10 text-center text-sm text-zinc-500">
+          <Link href="/" className="font-medium underline hover:text-zinc-700">
+            Back to home
+          </Link>
         </p>
       </div>
     </div>

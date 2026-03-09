@@ -71,6 +71,7 @@ export default function ProducerProfilePage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/producer/profile")
@@ -120,6 +121,10 @@ export default function ProducerProfilePage() {
     const f = e.target.files?.[0];
     if (!f) return;
     setUploadError(null);
+    setLocalPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(f);
+    });
     setUploadingPhoto(true);
     try {
       const urlRes = await fetch("/api/producer/upload-url", {
@@ -152,13 +157,27 @@ export default function ProducerProfilePage() {
       }
       setProfileForm((prev) => ({ ...prev, imageUrl: urlData.publicUrl }));
       setMessage({ type: "success", text: "Photo uploaded. Save profile to keep it." });
+      setLocalPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
     } catch {
       setUploadError("Upload failed");
+      setLocalPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
     } finally {
       setUploadingPhoto(false);
       e.target.value = "";
     }
   }
+
+  useEffect(() => {
+    return () => {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    };
+  }, [localPreviewUrl]);
 
   if (loading) {
     return (
@@ -325,6 +344,15 @@ export default function ProducerProfilePage() {
         >
           <div>
             <label className="mb-1 block text-sm font-medium text-zinc-700">Profile photo</label>
+            {(profileForm.imageUrl || localPreviewUrl) && (
+              <div className="mb-4 flex justify-center">
+                <img
+                  src={localPreviewUrl ?? profileForm.imageUrl ?? ""}
+                  alt="Profile preview"
+                  className="h-40 w-40 rounded-full border-2 border-zinc-200 object-cover shadow-inner"
+                />
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-2">
               <label className="cursor-pointer rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
                 {uploadingPhoto ? "Uploading…" : "Upload photo"}
