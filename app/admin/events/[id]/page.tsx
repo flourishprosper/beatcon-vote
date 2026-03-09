@@ -77,9 +77,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const [flowError, setFlowError] = useState<string | null>(null);
   const [generatingFirst, setGeneratingFirst] = useState(false);
   const [firstRoundError, setFirstRoundError] = useState<string | null>(null);
-  const [participantName, setParticipantName] = useState("");
-  const [participantSeed, setParticipantSeed] = useState("");
-  const [addingParticipant, setAddingParticipant] = useState(false);
   const [producerSignups, setProducerSignups] = useState<ProducerSignupRow[]>([]);
   const [addingSignupId, setAddingSignupId] = useState<string | null>(null);
   const [acceptsProducerRegistration, setAcceptsProducerRegistration] = useState(false);
@@ -217,27 +214,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       }
     } finally {
       setGeneratingFirst(false);
-    }
-  }
-
-  async function addParticipantInline(e: React.FormEvent) {
-    e.preventDefault();
-    if (!id) return;
-    setAddingParticipant(true);
-    const res = await fetch(`/api/events/${id}/participants`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: participantName.trim(),
-        seed: participantSeed ? Number(participantSeed) : null,
-      }),
-    });
-    const data = await res.json();
-    setAddingParticipant(false);
-    if (res.ok) {
-      setEvent((prev) => (prev ? { ...prev, participants: [...prev.participants, data] } : null));
-      setParticipantName("");
-      setParticipantSeed("");
     }
   }
 
@@ -654,77 +630,23 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           </div>
           {event.participants.length === 0 && (
             <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50/80 p-4">
-              <p className="mb-3 text-sm font-medium text-amber-900">Add your first participants</p>
-              <p className="mb-3 text-sm text-amber-800">
-                These are the contestants that will appear in matchups. Add at least 2 to create your first round.
+              <p className="mb-2 text-sm font-medium text-amber-900">Add your first participants</p>
+              <p className="text-sm text-amber-800">
+                Participants are added only from the <strong>Producer signups</strong> section below. Turn on &quot;Accept producer registration&quot; so producers can sign up; then add them to the bracket from that list. You need at least 2 participants to create your first round.
               </p>
-              <form onSubmit={addParticipantInline} className="mb-3 flex flex-wrap items-end gap-2">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-zinc-600">Name</label>
-                  <input
-                    type="text"
-                    value={participantName}
-                    onChange={(e) => setParticipantName(e.target.value)}
-                    required
-                    placeholder="Contestant name"
-                    className="rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-zinc-600">Seed (optional)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={participantSeed}
-                    onChange={(e) => setParticipantSeed(e.target.value)}
-                    placeholder="—"
-                    className="w-20 rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={addingParticipant}
-                  className="rounded-lg bg-zinc-800 px-4 py-2 text-sm text-white hover:bg-zinc-700 disabled:opacity-50"
-                >
-                  {addingParticipant ? "Adding…" : "Add"}
-                </button>
-              </form>
               <Link
                 href={`/admin/events/${id}/participants`}
-                className="text-sm font-medium text-amber-800 underline hover:no-underline"
+                className="mt-3 inline-block text-sm font-medium text-amber-800 underline hover:no-underline"
               >
-                Or manage all participants →
+                Manage participants →
               </Link>
             </div>
           )}
           {event.participants.length === 1 && (
             <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50/80 p-3">
-              <p className="text-sm text-amber-800">Add at least one more participant to create matchups.</p>
-              <form onSubmit={addParticipantInline} className="mt-2 flex flex-wrap items-end gap-2">
-                <input
-                  type="text"
-                  value={participantName}
-                  onChange={(e) => setParticipantName(e.target.value)}
-                  required
-                  placeholder="Name"
-                  className="rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
-                />
-                <input
-                  type="number"
-                  min={1}
-                  value={participantSeed}
-                  onChange={(e) => setParticipantSeed(e.target.value)}
-                  placeholder="Seed (optional)"
-                  className="w-24 rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
-                />
-                <button
-                  type="submit"
-                  disabled={addingParticipant}
-                  className="rounded-lg bg-zinc-800 px-4 py-2 text-sm text-white hover:bg-zinc-700 disabled:opacity-50"
-                >
-                  {addingParticipant ? "Adding…" : "Add"}
-                </button>
-              </form>
+              <p className="text-sm text-amber-800">
+                Add at least one more participant to create matchups. Add them from the <strong>Producer signups</strong> section below.
+              </p>
             </div>
           )}
           {event.participants.length > 0 && (
@@ -742,7 +664,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         <section>
           <h2 className="mb-3 text-lg font-medium text-zinc-900">Producer signups</h2>
           <p className="mb-3 text-sm text-zinc-600">
-            Producers can register for this event when &quot;Accept producer registration&quot; is on. Add them to the bracket below.
+            Producers can register for this event when &quot;Accept producer registration&quot; is on. Only people who have signed up can be added as participants; add them to the bracket below.
           </p>
           <label className="mb-4 flex items-center gap-2">
             <input

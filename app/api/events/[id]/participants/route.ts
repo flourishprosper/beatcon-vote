@@ -1,13 +1,6 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth-api";
-
-const createSchema = z.object({
-  name: z.string().min(1),
-  imageUrl: z.string().url().optional().nullable(),
-  seed: z.number().int().min(1).optional().nullable(),
-});
 
 export async function GET(
   _req: Request,
@@ -24,19 +17,16 @@ export async function GET(
 }
 
 export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  _req: Request,
+  _context: { params: Promise<{ id: string }> }
 ) {
   const err = await requireAdmin();
   if (err) return err;
-  const { id } = await params;
-  const body = await req.json();
-  const parsed = createSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(parsed.error.flatten(), { status: 400 });
-  }
-  const participant = await prisma.participant.create({
-    data: { ...parsed.data, eventId: id },
-  });
-  return NextResponse.json(participant);
+  return NextResponse.json(
+    {
+      error:
+        "Participants can only be added from producer signups. Use the Producer signups section on the event page.",
+    },
+    { status: 400 }
+  );
 }
