@@ -14,15 +14,36 @@ type Event = {
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setError(null);
     fetch("/api/events")
-      .then((r) => r.json())
-      .then(setEvents)
+      .then((r) => {
+        if (!r.ok) {
+          if (r.status === 403) setError("You don’t have permission to view events. Log in as an admin.");
+          else if (r.status === 401) setError("Please log in.");
+          else setError("Failed to load events.");
+          return [];
+        }
+        return r.json();
+      })
+      .then((data) => setEvents(Array.isArray(data) ? data : []))
+      .catch(() => {
+        setError("Failed to load events.");
+        setEvents([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="text-zinc-500">Loading…</div>;
+  if (error) {
+    return (
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div>

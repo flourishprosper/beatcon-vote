@@ -1,5 +1,6 @@
 import { auth, signOut } from "@/lib/auth";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 export default async function AdminLayout({
   children,
@@ -8,9 +9,14 @@ export default async function AdminLayout({
 }) {
   const session = await auth();
 
+  if (session?.user && session.user.role !== "admin") {
+    if (session.user.role === "producer") redirect("/producer");
+    redirect("/admin/login");
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50">
-      {session && (
+      {session?.user?.role === "admin" && (
         <header className="border-b border-zinc-200 bg-white">
           <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
             <nav className="flex items-center gap-6">
