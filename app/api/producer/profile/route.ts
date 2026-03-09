@@ -7,16 +7,23 @@ import { slugFromStageName, ensureUniqueProducerSlug } from "@/lib/slug";
 const YEARS_OPTIONS = ["3-5", "6-10", "10+"] as const;
 
 const optionalUrl = z.union([z.string().url(), z.literal("")]).optional().transform((v) => v || null);
+const optionalStringMin1 = z
+  .union([z.string().min(1), z.literal("")])
+  .optional()
+  .transform((v) => (v === "" ? undefined : v));
 const updateSchema = z.object({
-  fullName: z.string().min(1).optional(),
-  stageName: z.string().min(1).optional(),
-  phone: z.string().min(1).optional(),
+  fullName: optionalStringMin1,
+  stageName: optionalStringMin1,
+  phone: optionalStringMin1,
   instagramHandle: z.string().optional().nullable(),
   cityState: z.string().optional().nullable(),
-  yearsProducing: z.enum(YEARS_OPTIONS).optional(),
-  genre: z.string().min(1).optional(),
-  productionStyle: z.string().min(1).optional(),
-  imageUrl: z.string().url().optional().nullable(),
+  yearsProducing: z
+    .union([z.enum(YEARS_OPTIONS), z.literal("")])
+    .optional()
+    .transform((v) => (v === "" ? undefined : v)),
+  genre: optionalStringMin1,
+  productionStyle: optionalStringMin1,
+  imageUrl: z.union([z.string().url(), z.literal("")]).optional().transform((v) => v || null),
   spotifyUrl: optionalUrl,
   appleMusicUrl: optionalUrl,
   websiteUrl: optionalUrl,
@@ -67,7 +74,13 @@ export async function PATCH(req: Request) {
   const body = await req.json();
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(parsed.error.flatten(), { status: 400 });
+    const flat = parsed.error.flatten();
+    const firstIssue = parsed.error.issues[0];
+    const message = firstIssue?.message ?? "Validation failed";
+    return NextResponse.json(
+      { error: message, ...flat },
+      { status: 400 }
+    );
   }
 
   const update: {

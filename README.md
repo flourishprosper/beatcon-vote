@@ -35,6 +35,7 @@ Live voting app: admin manages events, rounds, and matchups; voters scan a QR co
 
 - Set env vars in Netlify: `DATABASE_URL` (pooled Neon), `DIRECT_URL` (direct Neon), `NEXTAUTH_SECRET`, `NEXTAUTH_URL`. If you use the Netlify–Neon integration, `NETLIFY_DATABASE_URL` and `NETLIFY_DATABASE_URL_UNPOOLED` are set automatically.
 - For producer profile and media uploads, set all `DO_SPACES_*` variables (see `.env.example`). You can remove `BLOB_READ_WRITE_TOKEN` if fully migrated from Vercel Blob.
+- **CORS on the Space**: The browser uploads files directly to your Space via a presigned URL. Configure CORS on the bucket so your app’s origin is allowed. In the DigitalOcean Control Panel: open your Space → **Settings** → **CORS Configurations** → **Add**. Set **Origin** to `https://beatcon-vote.netlify.app` (and add `http://localhost:3000` for local dev if needed). **Allowed Methods**: `GET`, `PUT`, `HEAD`. **Allowed Headers**: `*` or at least `Content-Type`. Save. Alternatively use the XML in `docs/spaces-cors.xml` with `s3cmd setcors docs/spaces-cors.xml s3://YOUR_BUCKET`.
 - Build runs `prisma generate`, `prisma migrate deploy`, then `next build` (see `netlify.toml`).
 
 ## Tech
