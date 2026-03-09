@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getUpcomingEvents } from "@/lib/events";
 
 const TICKET_URL =
   process.env.NEXT_PUBLIC_TICKET_URL ?? "https://www.eventim.us/event/BEAT-CON/682819";
@@ -17,7 +18,17 @@ const DOWNLOADS = [
   },
 ] as const;
 
-export default function HomePage() {
+function formatDateTime(iso: string | Date | null): string {
+  if (!iso) return "";
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  return d.toLocaleString(undefined, {
+    dateStyle: "long",
+    timeStyle: "short",
+  });
+}
+
+export default async function HomePage() {
+  const upcomingEvents = await getUpcomingEvents();
   return (
     <div className="relative min-h-screen bg-[var(--lander-bg)] text-[var(--lander-text)]">
       <div className="lander-grain fixed inset-0 z-0" aria-hidden />
@@ -36,6 +47,12 @@ export default function HomePage() {
               />
             </Link>
             <div className="flex items-center gap-4 sm:gap-6">
+              <a
+                href="#upcoming-events"
+                className="text-sm font-medium text-[var(--lander-muted)] transition-colors hover:text-[var(--lander-text)]"
+              >
+                Events
+              </a>
               <a
                 href="#producers"
                 className="text-sm font-medium text-[var(--lander-muted)] transition-colors hover:text-[var(--lander-text)]"
@@ -119,6 +136,51 @@ export default function HomePage() {
                 Producer sign up
               </Link>
             </div>
+          </div>
+        </section>
+
+        {/* Upcoming events */}
+        <section id="upcoming-events" className="border-t border-[var(--lander-border)] bg-[var(--lander-surface)] px-5 py-20 sm:px-8">
+          <div className="mx-auto max-w-6xl">
+            <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+              Upcoming events
+            </h2>
+            <p className="mt-2 text-[var(--lander-muted)]">
+              See event details, when and where, and who’s competing.
+            </p>
+            {upcomingEvents.length === 0 ? (
+              <p className="mt-8 text-[var(--lander-muted)]">
+                No upcoming events right now. Check back soon.
+              </p>
+            ) : (
+              <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {upcomingEvents.map((event) => {
+                  const when = event.eventStartsAt
+                    ? formatDateTime(event.eventStartsAt) + (event.eventEndsAt ? " – " + formatDateTime(event.eventEndsAt) : "")
+                    : "Date TBA";
+                  const where = [event.venueName, [event.city, event.state].filter(Boolean).join(", ")].filter(Boolean).join(" · ") || null;
+                  return (
+                    <Link
+                      key={event.id}
+                      href={`/events/${event.slug}`}
+                      className="group flex flex-col rounded-xl border border-[var(--lander-border)] bg-[var(--lander-bg)] p-5 transition-colors hover:border-[var(--lander-muted)] hover:bg-[var(--lander-surface)]/80"
+                    >
+                      <h3 className="font-semibold text-[var(--lander-text)] group-hover:text-[var(--lander-accent)]">
+                        {event.name}
+                      </h3>
+                      <p className="mt-2 text-sm text-[var(--lander-muted)]">{when}</p>
+                      {where && <p className="mt-1 text-sm text-[var(--lander-muted)]">{where}</p>}
+                      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--lander-accent)] group-hover:underline">
+                        View event
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </section>
 
