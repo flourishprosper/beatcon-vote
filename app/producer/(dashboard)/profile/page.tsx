@@ -13,6 +13,24 @@ const YEARS_OPTIONS = [
 const PROFILE_TAB_IDS = ["basic", "photo", "links"] as const;
 type ProfileTabId = (typeof PROFILE_TAB_IDS)[number];
 
+const PATCH_KEYS = [
+  "fullName",
+  "stageName",
+  "phone",
+  "instagramHandle",
+  "cityState",
+  "yearsProducing",
+  "genre",
+  "productionStyle",
+  "imageUrl",
+  "spotifyUrl",
+  "appleMusicUrl",
+  "websiteUrl",
+  "bio",
+  "soundCloudUrl",
+  "twitterHandle",
+] as const;
+
 function isValidProfileTab(t: string | null): t is ProfileTabId {
   return t !== null && PROFILE_TAB_IDS.includes(t as ProfileTabId);
 }
@@ -50,6 +68,7 @@ export default function ProducerProfilePage() {
   const [profileForm, setProfileForm] = useState<Partial<Profile>>({});
   const [savingProfile, setSavingProfile] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -74,10 +93,15 @@ export default function ProducerProfilePage() {
     if (!profileForm) return;
     setSavingProfile(true);
     setMessage(null);
+    setFieldErrors({});
+    const payload: Record<string, unknown> = {};
+    for (const key of PATCH_KEYS) {
+      if (key in profileForm) payload[key] = profileForm[key];
+    }
     const res = await fetch("/api/producer/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(profileForm),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     setSavingProfile(false);
@@ -85,8 +109,10 @@ export default function ProducerProfilePage() {
       setProfile(data);
       setProfileForm(data);
       setMessage({ type: "success", text: "Profile updated." });
+      setFieldErrors({});
     } else {
       setMessage({ type: "error", text: data.error ?? "Failed to update profile." });
+      setFieldErrors((data.fieldErrors as Record<string, string[]>) ?? {});
     }
   }
 
@@ -165,7 +191,18 @@ export default function ProducerProfilePage() {
             message.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
           }`}
         >
-          {message.text}
+          <p>{message.text}</p>
+          {message.type === "error" && Object.keys(fieldErrors).length > 0 && (
+            <ul className="mt-2 list-inside list-disc text-sm">
+              {Object.entries(fieldErrors).flatMap(([field, errs]) =>
+                (errs as string[]).map((err, i) => (
+                  <li key={`${field}-${i}`}>
+                    {field}: {err}
+                  </li>
+                ))
+              )}
+            </ul>
+          )}
         </div>
       )}
 

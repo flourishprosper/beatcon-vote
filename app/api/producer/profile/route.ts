@@ -6,11 +6,28 @@ import { slugFromStageName, ensureUniqueProducerSlug } from "@/lib/slug";
 
 const YEARS_OPTIONS = ["3-5", "6-10", "10+"] as const;
 
-const optionalUrl = z.union([z.string().url(), z.literal("")]).optional().transform((v) => v || null);
-const optionalStringMin1 = z
-  .union([z.string().min(1), z.literal("")])
+function isValidUrl(s: string): boolean {
+  try {
+    new URL(s);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const lenientUrl = z
+  .union([z.string(), z.null(), z.undefined()])
   .optional()
-  .transform((v) => (v === "" ? undefined : v));
+  .transform((v): string | null => {
+    if (v == null || typeof v !== "string" || v.trim() === "") return null;
+    return isValidUrl(v) ? v : null;
+  });
+
+const optionalStringMin1 = z
+  .union([z.string().min(1), z.literal(""), z.null()])
+  .optional()
+  .transform((v) => (v === "" || v === null ? undefined : v));
+
 const updateSchema = z.object({
   fullName: optionalStringMin1,
   stageName: optionalStringMin1,
@@ -18,17 +35,17 @@ const updateSchema = z.object({
   instagramHandle: z.string().optional().nullable(),
   cityState: z.string().optional().nullable(),
   yearsProducing: z
-    .union([z.enum(YEARS_OPTIONS), z.literal("")])
+    .union([z.enum(YEARS_OPTIONS), z.literal(""), z.null()])
     .optional()
-    .transform((v) => (v === "" ? undefined : v)),
+    .transform((v) => (v === "" || v === null ? undefined : v)),
   genre: optionalStringMin1,
   productionStyle: optionalStringMin1,
-  imageUrl: z.union([z.string().url(), z.literal("")]).optional().transform((v) => v || null),
-  spotifyUrl: optionalUrl,
-  appleMusicUrl: optionalUrl,
-  websiteUrl: optionalUrl,
+  imageUrl: lenientUrl,
+  spotifyUrl: lenientUrl,
+  appleMusicUrl: lenientUrl,
+  websiteUrl: lenientUrl,
   bio: z.string().optional().nullable(),
-  soundCloudUrl: optionalUrl,
+  soundCloudUrl: lenientUrl,
   twitterHandle: z.string().optional().nullable(),
 });
 
