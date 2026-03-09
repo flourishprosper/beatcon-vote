@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { ProducerAvatar } from "./ProducerAvatar";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -73,20 +74,10 @@ export default async function ProducerPublicPage({ params }: Props) {
         <header className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm sm:p-8">
           <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left sm:gap-8">
             <div className="shrink-0">
-              {producer.imageUrl ? (
-                <img
-                  src={producer.imageUrl}
-                  alt={producer.stageName}
-                  className="h-28 w-28 rounded-full object-cover ring-2 ring-zinc-200 sm:h-36 sm:w-36"
-                />
-              ) : (
-                <div
-                  className="flex h-28 w-28 items-center justify-center rounded-full bg-zinc-200 text-3xl font-bold text-zinc-400 sm:h-36 sm:w-36"
-                  aria-hidden
-                >
-                  {producer.stageName.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <ProducerAvatar
+                imageUrl={producer.imageUrl}
+                stageName={producer.stageName}
+              />
             </div>
             <div className="mt-4 min-w-0 flex-1 sm:mt-0">
               <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">

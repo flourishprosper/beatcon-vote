@@ -26,7 +26,11 @@ export function getSpacesBucket(): string {
 export function getSpacesCdnUrl(objectKey: string): string {
   const base = process.env.DO_SPACES_CDN_ENDPOINT;
   if (!base) throw new Error("DO_SPACES_CDN_ENDPOINT must be set");
-  const trimmed = base.replace(/\/$/, "");
+  const trimmed = base.replace(/\/$/, "").trim();
+  const absoluteBase =
+    trimmed.startsWith("http://") || trimmed.startsWith("https://")
+      ? trimmed
+      : `https://${trimmed}`;
   const key = objectKey.startsWith("/") ? objectKey.slice(1) : objectKey;
-  return `${trimmed}/${key}`;
+  return `${absoluteBase}/${key}`;
 }

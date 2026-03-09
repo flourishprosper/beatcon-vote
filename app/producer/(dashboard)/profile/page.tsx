@@ -72,6 +72,7 @@ export default function ProducerProfilePage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const [imageLoadError, setImageLoadError] = useState(false);
 
   useEffect(() => {
     fetch("/api/producer/profile")
@@ -157,6 +158,7 @@ export default function ProducerProfilePage() {
       }
       setProfileForm((prev) => ({ ...prev, imageUrl: urlData.publicUrl }));
       setMessage({ type: "success", text: "Photo uploaded. Save profile to keep it." });
+      setImageLoadError(false);
       setLocalPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return null;
@@ -345,12 +347,17 @@ export default function ProducerProfilePage() {
           <div>
             <label className="mb-1 block text-sm font-medium text-zinc-700">Profile photo</label>
             {(profileForm.imageUrl || localPreviewUrl) && (
-              <div className="mb-4 flex justify-center">
+              <div className="mb-4 flex flex-col items-center">
                 <img
                   src={localPreviewUrl ?? profileForm.imageUrl ?? ""}
                   alt="Profile preview"
                   className="h-40 w-40 rounded-full border-2 border-zinc-200 object-cover shadow-inner"
+                  referrerPolicy="no-referrer"
+                  onError={() => setImageLoadError(true)}
                 />
+                {imageLoadError && !localPreviewUrl && (
+                  <p className="mt-2 text-sm text-amber-600">Image couldn&apos;t load. Check the URL or try uploading again.</p>
+                )}
               </div>
             )}
             <div className="flex flex-wrap items-center gap-2">
@@ -372,6 +379,7 @@ export default function ProducerProfilePage() {
               value={profileForm.imageUrl ?? ""}
               onChange={(e) => {
                 setUploadError(null);
+                setImageLoadError(false);
                 setProfileForm((f) => ({ ...f, imageUrl: e.target.value || null }));
               }}
               placeholder="https://…"
