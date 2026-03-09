@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { getProxiedImageUrl } from "@/lib/spaces";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -113,9 +114,10 @@ export default async function PublicEventPage({ params }: Props) {
                       <div className="relative aspect-square overflow-hidden rounded-lg bg-zinc-100">
                         {p.imageUrl ? (
                           <img
-                            src={p.imageUrl}
+                            src={getProxiedImageUrl(p.imageUrl) ?? p.imageUrl}
                             alt=""
                             className="h-full w-full object-cover"
+                            referrerPolicy="no-referrer"
                           />
                         ) : (
                           <div className="flex h-full items-center justify-center text-3xl font-bold text-zinc-300">

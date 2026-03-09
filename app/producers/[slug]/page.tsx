@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { getProxiedImageUrl } from "@/lib/spaces";
 import { ProducerAvatar } from "./ProducerAvatar";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -75,7 +76,7 @@ export default async function ProducerPublicPage({ params }: Props) {
           <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left sm:gap-8">
             <div className="shrink-0">
               <ProducerAvatar
-                imageUrl={producer.imageUrl}
+                imageUrl={getProxiedImageUrl(producer.imageUrl) ?? producer.imageUrl}
                 stageName={producer.stageName}
               />
             </div>

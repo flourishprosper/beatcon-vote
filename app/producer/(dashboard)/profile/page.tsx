@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getProxiedImageUrlForDisplay } from "@/lib/proxy-image-client";
 
 const YEARS_OPTIONS = [
   { value: "3-5", label: "3–5 years" },
@@ -349,7 +350,12 @@ export default function ProducerProfilePage() {
             {(profileForm.imageUrl || localPreviewUrl) && (
               <div className="mb-4 flex flex-col items-center">
                 <img
-                  src={localPreviewUrl ?? profileForm.imageUrl ?? ""}
+                  src={
+                    localPreviewUrl ??
+                    getProxiedImageUrlForDisplay(profileForm.imageUrl) ??
+                    profileForm.imageUrl ??
+                    ""
+                  }
                   alt="Profile preview"
                   className="h-40 w-40 rounded-full border-2 border-zinc-200 object-cover shadow-inner"
                   referrerPolicy="no-referrer"
