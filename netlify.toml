@@ -1,11 +1,11 @@
-# Run migrations against Neon (DIRECT_URL / NETLIFY_DATABASE_URL_UNPOOLED) then build
+# Next.js on Netlify: plugin runs Next build and configures API routes / serverless correctly
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Run migrations then build (plugin runs next build)
 [build]
   command = "npx prisma generate && npx prisma migrate deploy && npm run build"
   publish = ".next"
 
-# Next.js standalone or default output
 [build.environment]
   NODE_VERSION = "20"
-
-# Next.js on Netlify (if using @netlify/plugin-nextjs it may override publish)
-# If you use the default Next runtime, publish is typically ".next" and the plugin handles the rest.

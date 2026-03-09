@@ -108,7 +108,11 @@ export default function ProducerProfilePage() {
       });
       const urlData = await urlRes.json();
       if (!urlRes.ok) {
-        setUploadError(urlData.error ?? "Could not get upload URL");
+        const message =
+          urlRes.status === 503
+            ? "Photo upload is not available right now. Please try again later or contact the organizer."
+            : (urlData.error ?? "Could not get upload URL");
+        setUploadError(message);
         return;
       }
       const putRes = await fetch(urlData.uploadUrl, {

@@ -48,71 +48,77 @@ function getExtFromMime(mime: string): string {
 }
 
 export async function POST(req: Request) {
-  const err = await requireProducer();
-  if (err) return err;
-  const producerId = await getProducerId();
-  if (!producerId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  if (
-    !process.env.DO_SPACES_KEY ||
-    !process.env.DO_SPACES_SECRET ||
-    !process.env.DO_SPACES_BUCKET ||
-    !process.env.DO_SPACES_CDN_ENDPOINT
-  ) {
-    return NextResponse.json(
-      { error: "Upload is not configured. Set DO_SPACES_* environment variables." },
-      { status: 503 }
-    );
-  }
-
-  let body: { filename?: string; contentType?: string; kind?: string; size?: number };
   try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+    const err = await requireProducer();
+    if (err) return err;
+    const producerId = await getProducerId();
+    if (!producerId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const filename = typeof body.filename === "string" ? body.filename.trim() : "";
-  const contentType = typeof body.contentType === "string" ? body.contentType.trim().toLowerCase() : "";
-  const kind = (typeof body.kind === "string" ? body.kind : "image") as Kind;
-  const size = typeof body.size === "number" ? body.size : 0;
+    const key = process.env.DO_SPACES_KEY?.trim();
+    const secret = process.env.DO_SPACES_SECRET?.trim();
+    const bucket = process.env.DO_SPACES_BUCKET?.trim();
+    const cdnEndpoint = process.env.DO_SPACES_CDN_ENDPOINT?.trim();
 
-  if (!filename || !contentType) {
-    return NextResponse.json(
-      { error: "Missing filename or contentType" },
-      { status: 400 }
-    );
-  }
+    if (!key || !secret || !bucket || !cdnEndpoint) {
+      return NextResponse.json(
+        {
+          error:
+            "Upload is not configured. Set DO_SPACES_KEY, DO_SPACES_SECRET, DO_SPACES_BUCKET, and DO_SPACES_CDN_ENDPOINT in your deployment environment (e.g. Netlify).",
+        },
+        {
+          status: 503,
+          headers: { "X-Upload-Error": "not-configured" },
+        }
+      );
+    }
 
-  const config = KIND_CONFIG[kind];
-  if (!config) {
-    return NextResponse.json(
-      { error: "Invalid kind. Use image, audio, or video." },
-      { status: 400 }
-    );
-  }
-  if (!(config.mimeTypes as readonly string[]).includes(contentType) && !ALL_MIME_TYPES.has(contentType)) {
-    return NextResponse.json(
-      { error: `Invalid contentType for ${kind}. Allowed: ${config.mimeTypes.join(", ")}` },
-      { status: 400 }
-    );
-  }
-  if (size > config.maxBytes) {
-    return NextResponse.json(
-      { error: `File too large for ${kind}. Maximum size is ${config.maxBytes / 1024 / 1024}MB.` },
-      { status: 400 }
-    );
-  }
+    let body: { filename?: string; contentType?: string; kind?: string; size?: number };
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
 
-  const ext = getExtFromMime(contentType);
-  const safeName = sanitizeFilename(filename).replace(/\.[^.]+$/, "") || "file";
-  const objectKey = `producer-media/${producerId}/${Date.now()}-${safeName}.${ext}`;
+    const filename = typeof body.filename === "string" ? body.filename.trim() : "";
+    const contentType = typeof body.contentType === "string" ? body.contentType.trim().toLowerCase() : "";
+    const kind = (typeof body.kind === "string" ? body.kind : "image") as Kind;
+    const size = typeof body.size === "number" ? body.size : 0;
 
-  try {
+    if (!filename || !contentType) {
+      return NextResponse.json(
+        { error: "Missing filename or contentType" },
+        { status: 400 }
+      );
+    }
+
+    const config = KIND_CONFIG[kind];
+    if (!config) {
+      return NextResponse.json(
+        { error: "Invalid kind. Use image, audio, or video." },
+        { status: 400 }
+      );
+    }
+    if (!(config.mimeTypes as readonly string[]).includes(contentType) && !ALL_MIME_TYPES.has(contentType)) {
+      return NextResponse.json(
+        { error: `Invalid contentType for ${kind}. Allowed: ${config.mimeTypes.join(", ")}` },
+        { status: 400 }
+      );
+    }
+    if (size > config.maxBytes) {
+      return NextResponse.json(
+        { error: `File too large for ${kind}. Maximum size is ${config.maxBytes / 1024 / 1024}MB.` },
+        { status: 400 }
+      );
+    }
+
+    const ext = getExtFromMime(contentType);
+    const safeName = sanitizeFilename(filename).replace(/\.[^.]+$/, "") || "file";
+    const objectKey = `producer-media/${producerId}/${Date.now()}-${safeName}.${ext}`;
+
     const client = getSpacesClient();
-    const bucket = getSpacesBucket();
+    const bucketName = getSpacesBucket();
     const command = new PutObjectCommand({
-      Bucket: bucket,
+      Bucket: bucketName,
       Key: objectKey,
       ContentType: contentType,
       ACL: "public-read",
@@ -121,9 +127,24 @@ export async function POST(req: Request) {
     const publicUrl = getSpacesCdnUrl(objectKey);
     return NextResponse.json({ uploadUrl, objectKey, publicUrl });
   } catch (e) {
-    console.error("Presigned URL error:", e);
+    if (e && typeof e === "object" && "digest" in e && typeof (e as { digest?: string }).digest === "string") {
+      const err = e as { digest?: string };
+      if (err.digest?.startsWith("NEXT_REDIRECT")) throw e;
+    }
+    console.error("Upload URL error:", e);
+    const isConfigError =
+      e instanceof Error && /must be set|not configured/i.test(e.message);
+    if (isConfigError) {
+      return NextResponse.json(
+        {
+          error:
+            "Upload is not configured. Set DO_SPACES_KEY, DO_SPACES_SECRET, DO_SPACES_BUCKET, and DO_SPACES_CDN_ENDPOINT in your deployment environment (e.g. Netlify).",
+        },
+        { status: 503, headers: { "X-Upload-Error": "not-configured" } }
+      );
+    }
     return NextResponse.json(
-      { error: "Failed to generate upload URL" },
+      { error: "Failed to generate upload URL. Check server logs." },
       { status: 500 }
     );
   }
