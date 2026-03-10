@@ -23,6 +23,7 @@ export default async function PublicEventPage({ params }: Props) {
       name: true,
       slug: true,
       description: true,
+      imageUrl: true,
       venueName: true,
       address: true,
       city: true,
@@ -69,6 +70,16 @@ export default async function PublicEventPage({ params }: Props) {
 
         <div className="rounded-xl border border-zinc-200 bg-white shadow-sm">
           <header className="border-b border-zinc-200 p-6 sm:p-8">
+            {event.imageUrl && (
+              <div className="-mx-6 -mt-6 mb-4 overflow-hidden rounded-t-xl sm:-mx-8 sm:-mt-8">
+                <img
+                  src={getProxiedImageUrl(event.imageUrl) ?? event.imageUrl}
+                  alt=""
+                  className="h-48 w-full object-cover sm:h-56"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            )}
             <h1 className="text-3xl font-bold text-zinc-900">{event.name}</h1>
             {event.description && (
               <p className="mt-3 text-zinc-600 whitespace-pre-wrap">{event.description}</p>

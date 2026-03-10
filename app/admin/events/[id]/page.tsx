@@ -3,6 +3,7 @@
 import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getProxiedImageUrlForDisplay } from "@/lib/proxy-image-client";
 
 type Participant = { id: string; name: string; imageUrl: string | null; seed: number | null };
 type Matchup = {
@@ -42,6 +43,7 @@ type EventDetail = {
   advancesPerMatchup: number;
   acceptsProducerRegistration?: boolean;
   description?: string | null;
+  imageUrl?: string | null;
   venueName?: string | null;
   address?: string | null;
   city?: string | null;
@@ -95,6 +97,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const [savingAcceptsRegistration, setSavingAcceptsRegistration] = useState(false);
   const [eventDetails, setEventDetails] = useState({
     description: "",
+    imageUrl: null as string | null,
     venueName: "",
     address: "",
     city: "",
@@ -104,6 +107,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     eventEndsAt: "",
   });
   const [savingDetails, setSavingDetails] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [eventImageLoadError, setEventImageLoadError] = useState(false);
+  const [localImagePreviewUrl, setLocalImagePreviewUrl] = useState<string | null>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -127,6 +134,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         setAcceptsProducerRegistration(data.acceptsProducerRegistration ?? false);
         setEventDetails({
           description: data.description ?? "",
+          imageUrl: data.imageUrl ?? null,
           venueName: data.venueName ?? "",
           address: data.address ?? "",
           city: data.city ?? "",
@@ -256,6 +264,67 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     }
   }
 
+  async function handleEventImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setUploadError(null);
+    setLocalImagePreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(f);
+    });
+    setUploadingImage(true);
+    try {
+      const urlRes = await fetch("/api/admin/upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: f.name,
+          contentType: f.type,
+          size: f.size,
+        }),
+      });
+      const urlData = await urlRes.json();
+      if (!urlRes.ok) {
+        const message =
+          urlRes.status === 503
+            ? "Image upload is not available right now. Try again later or check environment config."
+            : (urlData.error ?? "Could not get upload URL");
+        setUploadError(message);
+        return;
+      }
+      const putRes = await fetch(urlData.uploadUrl, {
+        method: "PUT",
+        body: f,
+        headers: { "Content-Type": f.type },
+      });
+      if (!putRes.ok) {
+        setUploadError("Upload to storage failed");
+        return;
+      }
+      setEventDetails((prev) => ({ ...prev, imageUrl: urlData.publicUrl }));
+      setLocalImagePreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      setEventImageLoadError(false);
+    } catch {
+      setUploadError("Upload failed");
+      setLocalImagePreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+    } finally {
+      setUploadingImage(false);
+      e.target.value = "";
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (localImagePreviewUrl) URL.revokeObjectURL(localImagePreviewUrl);
+    };
+  }, [localImagePreviewUrl]);
+
   async function saveEventDetails(e: React.FormEvent) {
     e.preventDefault();
     if (!id) return;
@@ -265,6 +334,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         description: eventDetails.description || null,
+        imageUrl: eventDetails.imageUrl ?? null,
         venueName: eventDetails.venueName || null,
         address: eventDetails.address || null,
         city: eventDetails.city || null,
@@ -560,6 +630,53 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             This information appears on the public event page so attendees know when and where the event is.
           </p>
           <form onSubmit={saveEventDetails} className="space-y-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">Event image</label>
+              {(eventDetails.imageUrl || localImagePreviewUrl) && (
+                <div className="mb-4">
+                  <img
+                    src={
+                      localImagePreviewUrl ??
+                      getProxiedImageUrlForDisplay(eventDetails.imageUrl) ??
+                      eventDetails.imageUrl ??
+                      ""
+                    }
+                    alt="Event preview"
+                    className="max-h-48 w-auto max-w-full rounded-lg border border-zinc-200 object-cover shadow-inner"
+                    referrerPolicy="no-referrer"
+                    onError={() => setEventImageLoadError(true)}
+                  />
+                  {eventImageLoadError && !localImagePreviewUrl && (
+                    <p className="mt-2 text-sm text-amber-600">Image couldn&apos;t load. Check the URL or try uploading again.</p>
+                  )}
+                </div>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="cursor-pointer rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
+                  {uploadingImage ? "Uploading…" : "Upload image"}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="sr-only"
+                    disabled={uploadingImage}
+                    onChange={handleEventImageUpload}
+                  />
+                </label>
+                <span className="text-sm text-zinc-500">or paste URL below</span>
+              </div>
+              {uploadError && <p className="mt-1 text-sm text-red-600">{uploadError}</p>}
+              <input
+                type="url"
+                value={eventDetails.imageUrl ?? ""}
+                onChange={(e) => {
+                  setUploadError(null);
+                  setEventImageLoadError(false);
+                  setEventDetails((d) => ({ ...d, imageUrl: e.target.value || null }));
+                }}
+                placeholder="https://…"
+                className="mt-2 w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
+              />
+            </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-zinc-700">Description</label>
               <textarea

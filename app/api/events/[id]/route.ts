@@ -3,6 +3,23 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth-api";
 
+function isValidUrl(s: string): boolean {
+  try {
+    new URL(s);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const lenientUrl = z
+  .union([z.string(), z.null(), z.undefined()])
+  .optional()
+  .transform((v): string | null => {
+    if (v == null || typeof v !== "string" || v.trim() === "") return null;
+    return isValidUrl(v) ? v : null;
+  });
+
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
   slug: z.string().min(1).regex(/^[a-z0-9-]+$/).optional(),
@@ -11,6 +28,7 @@ const updateSchema = z.object({
   advancesPerMatchup: z.number().int().min(1).optional(),
   acceptsProducerRegistration: z.boolean().optional(),
   description: z.string().optional().nullable(),
+  imageUrl: lenientUrl,
   venueName: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
