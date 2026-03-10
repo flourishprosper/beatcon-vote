@@ -64,7 +64,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!IMAGE_CONFIG.mimeTypes.includes(contentType)) {
+    if (!(IMAGE_CONFIG.mimeTypes as readonly string[]).includes(contentType)) {
       return NextResponse.json(
         { error: `Invalid contentType. Allowed: ${IMAGE_CONFIG.mimeTypes.join(", ")}` },
         { status: 400 }
